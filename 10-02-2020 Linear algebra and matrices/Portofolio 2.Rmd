@@ -75,13 +75,6 @@ plot(new_df)
 
 ggplot(new_df, aes(vec_day, Reaction.Reaction)) + geom_point() + geom_smooth(method=lm, alpha=0) + labs(x = 'Number of days of sleep deprivation', y = 'Reaction time', title = 'Sleep deprivation over time for participant 372')
 
-#Getting the fit
-beta<-solve(t(X)%*%X)%*%t(X)%*%Reaction
-beta
-#Adding a line to the plot Days on X-axis, intercept plus slope*days on y-axis
-lines(c(Days[1],Days[10]),c(beta[2]+beta[1]*Days[1],beta[2]+beta[1]*Days[10]),col='darkred')
-
-
 ```
 
 ## Task 2: Images and matrices
@@ -120,6 +113,9 @@ image(matrix2, col = grey(1:100/100))
 matrix2c <- matrix(rep(0,100), ncol=50, nrow=50)
 image(matrix2c, col=grey(1:100/100))
 
+matrix2c[,] <- 0.5
+image(matrix2c)
+
 ```
 
 ### 2.d: Draw a white hat on the image from 2.b (hint: use ones).
@@ -128,19 +124,17 @@ image(matrix2c, col=grey(1:100/100))
 #2d
 matrix2d <- matrix2
 
-#900 collumns og 606 columns
+#900 columns og 606 rows because of rotation
 
 900*0.8
+900*0.5
 600*0.3
 600*0.75
 0.7*600
 
-matrix2d[1, 1] <- 1
-
-matrix2d[180:450,700:725] <- 1
-matrix2d[200:210,700:800] <- 1
-matrix2d[400:410,700:800] <- 1
-matrix2d[200:410,800:810] <- 1
+matrix2d[130:490,700:720] <- 1
+matrix2d[175:435,700:830] <- 1
+matrix2d[175:435,720:730] <- 0.3
 
  
 image(matrix2d, col=grey(1:100/100))
@@ -148,8 +142,23 @@ image(matrix2d, col=grey(1:100/100))
 
 
 ### 2.e: Make an image which has the same dimensions as 2.b., and which only contains the parts which was hidden behind the hat in 2.d. The rest should be black.
+900 rows and 606 columns. The mean is 0.51, the maximum is 1 and the minimum is 0.06. 
 
 ```{r}
+matrix2e <- matrix2
+
+matrix2e[,831:900] <- 1
+matrix2e[,1:699] <- 1
+matrix2e[1:129,] <- 1
+matrix2e[491:606,] <- 1
+matrix2e[130:174,721:900]
+matrix2e[436:606,721:900]
+
+
+#matrix2d[130:490,700:720] <- 1
+#matrix2d[175:435,700:830] <- 1
+
+image(matrix2e, col=grey(1:100/100))
 
 ```
 
@@ -160,7 +169,7 @@ image(matrix2d, col=grey(1:100/100))
 
 ### 3.c: Make an image which is white where the pixel values of the brain image are smaller than 2.5 times the mean value of the whole image. Call this matrix mask2
 
-### 3.d: Convert mask1 and mask2 into one mask with ones where the two masks overlap and zeros everywhere else. What type mathematical procedure can be used to produce this?
+### 3.d: Convert mask1 and mask2 into one mask with ones where the two masks overlap and zeros everywhere else. What type mathematical procedure can be used to produce this? 
 
 ### 3.e. Use the combined mask on the brain image to give you an image with only the image values where the mask has ones, and zeros everywhere else. Did we successfully limit our image to only contain gray matter?
 
