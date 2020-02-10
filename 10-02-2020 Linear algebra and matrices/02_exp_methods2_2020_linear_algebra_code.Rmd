@@ -1,0 +1,361 @@
+---
+title: "Linear algebra"
+author: "Mikkel Wallentin"
+date: "1/22/2018"
+output: pdf_document
+---
+
+#Vectors
+A vector is basically, a string of numbers, e.g. [1,4,5,6].
+
+Vectors are very useful for a lot of things, and therefore we will spend a bit of time looking at what we can do with vectors.
+
+
+##Plotting two 2D vectors
+```{r }
+getwd()
+#Two vectors with two elements. 
+#We call vectors a 2D vectors.
+a1=c(2,2)
+a2=c(1,-1)
+
+#Make an empty plot (type='n')
+plot(c(-2,3.2),c(-2,3.2),xlim=c(-2.2,4), type="n",xlab='',ylab='',asp=1,frame=FALSE)
+#add grid
+grid()
+#Add arrows for axes
+arrows(x0=c(-2, 0),y0=c(0,-2),x1=c(3,0),y1=c(0,3), col=c(1,1))
+#Add arrows for vectors
+arrows(x0=c(0,0),y0=c(0,0),x1=c(a1[1],a2[1]),y1=c(a1[2],a2[2]),col=c(3,3))
+#Add text
+text(a1[1]+0.2,a1[2]+0.2,labels='a1=(2,2)')
+text(a2[1]-0.2,a2[2]-0.2,labels='a2=(1,-1)')
+```
+
+##The length of a 2D vector
+We can find the length of a 2D vector using pythagoras' rule for triangles:
+a^2+b^2=c^2
+
+```{r}
+#A 2D vector
+a1=c(2,2)
+#Make an empty plot (type='n')
+plot(c(-2,3.2),c(-2,3.2),xlim=c(-2.2,4), type="n",xlab='',ylab='',asp=1,frame=FALSE)
+#add grid
+grid()
+#Add arrows for axes
+arrows(x0=c(-2, 0),y0=c(0,-2),x1=c(3,0),y1=c(0,3), col=c(1,1))
+#Add arrow for vector
+arrows(x0=0,y0=0,x1=a1[1],y1=a1[2],col=3)
+#Add lines (arrows with no head) to illustrate the triangle
+plot1<-arrows(x0=c(0,a1[1]),y0=c(0,0),x1=c(a1[1],a1[1]),y1=c(0,a1[1]),length=0,col=c(2,2))
+#Add text
+text(a1[1]+0.2,a1[2]+0.2,labels='a1=(x,y)')
+text(a1[1]+0.2,a1[2]/2,labels='x')
+text(a1[1]/2,+0.2,labels='y')
+#text(a1[1]/2-1.2,a1[2]/2+0.2,labels='length(a1=sqrt(x^2+y^2)')
+
+#The actual length
+'The length of vector a1 is:'
+sqrt(a1[1]^2+a1[2]^2)
+```
+
+##Make a plot of a 3D vector
+```{r}
+library(rgl) # a package for 3D plotting
+#Two vectors
+b1=c(2,2,2)
+b2=c(1,-1,-2)
+
+#Make an empty plot (type='n')
+plot3d(c(-2,3.2),c(-2,3.2),c(-2,3.2),
+       type="n",xlab='x',ylab='y',zlab='z',asp=1,box=FALSE)
+
+#add grid
+grid3d(side=c('x','y+','z'))
+
+#Add arrows for axes
+arrow3d(p0=c(-2, 0,0),p1=c(3.2,0,0),col=1,type='lines')
+arrow3d(p0=c(0,-2 ,0),p1=c(0,3.2,0),col=1,type='lines')
+arrow3d(p0=c(0,0,-2),p1=c(0,0,3.2),col=1,type='lines')
+
+#add vectors
+arrow3d(p0=c(0,0,0),p1=b1,col='green',type='lines')
+arrow3d(p0=c(0,0,0),p1=b2,col='green',type='lines')
+
+#Add text
+texts3d(b1[1]+0.2,b1[2]+0.2,b1[3]+0.2,texts='b1=(2,2,2)')
+texts3d(b2[1]-0.2,b2[2]-0.2,b2[3]-0.2,texts='b2=(1,-1,-2)')
+```
+
+###Transposing a 15d vector
+```{r}
+c1=matrix(c(1,2,3,4,5,6,7,8,3,2,3,2,5,6,4),nrow=15)
+image(c1,col=rainbow(15))
+#transpose t()
+c2=t(c1)
+image(c2,col=rainbow(15))
+```
+###Personality Test Example
+```{r}
+#X=shoe size, Y=balloon_balance,Z=romberg_closed,
+morten=c(44,120,120)
+sigrid=c(39,3,5)
+julie=c(39,3,120)
+
+library(rgl) # a package for 3D plotting
+
+#Make an empty plot (type='n')
+plot3d(c(0,100),c(0,100), c(0,120),type="n",
+       xlab='shoe size',ylab='balloon_balance',zlab='romberg_closed',asp=1,box=FALSE)
+
+#add grid
+grid3d(side=c('x','y+','z'))
+
+#Add arrows for axes
+arrow3d(p0=c(0, 0,0),p1=c(100,0,0),col=1,type='lines')
+arrow3d(p0=c(0,0 ,0),p1=c(0,100,0),col=1,type='lines')
+arrow3d(p0=c(0,0,0),p1=c(0,0,100),col=1,type='lines')
+
+#add vectors
+arrow3d(p0=c(0, 0,0),p1=morten,col='green',type='lines')
+arrow3d(p0=c(0, 0,0),p1=sigrid,col='green',type='lines')
+arrow3d(p0=c(0, 0,0),p1=julie,col='green',type='lines')
+#Add text
+texts3d(morten[1]+0.2,morten[2]+0.2,morten[3],texts='morten')
+texts3d(sigrid[1]-0.2,sigrid[2]-0.2,sigrid[3],texts='sigrid')
+texts3d(julie[1]-0.2,julie[2]-0.2,julie[3],texts='julie')
+```
+
+###Euclidian distance
+```{r}
+#add vectors
+arrow3d(p0=sigrid,p1=julie,col='red',barblen=0,type='lines')
+#Euclidian distance
+'The euclidian distance between sigrid and julie is:'
+sqrt(sum((sigrid-julie)^2))
+```
+
+###Imagine if Julie has a child
+```{r}
+#Let's make a vector, which is exactly like julie, but half her size
+mini_julie=julie/2
+#add vectors
+arrow3d(p0=c(0,0,0),p1=mini_julie,col='blue',type='lines',lwd=3)
+```
+
+###Correlation = small angle in vector space
+```{r}
+#A correlation between Minijulie and julie
+cor.test(mini_julie,julie)
+#A correlation between julie and morten
+cor.test(morten,julie)
+```
+
+###Two vectors are orthogonal if inner produt is 0
+```{r}
+#Two vectors
+a1=c(2,2)
+a2=c(1,-1)
+#inner product
+sum(a1*a2)
+```
+#Matrices
+
+###Making a matrix
+```{r}
+#A 2 x 3 matrix
+A <- matrix(c(1,3,2,2,8,9),nrow=2,ncol=3)
+A
+```
+
+###Making out of the personality data
+```{r}
+#Making matrix out of the personality data
+pers <- matrix(c(morten,sigrid,julie),ncol=3)
+pers
+```
+
+###Transposing the matrix
+```{r}
+#Transposing the matrix
+pers<-t(pers)
+pers
+```
+
+###The right order can also be achieved by use of byrow()
+```{r}
+#Making matrix using byrow=TRUE
+pers <- matrix(c(morten,sigrid,julie),ncol=3, byrow=TRUE)
+pers
+```
+
+###Illustrating the matrix using image()
+```{r}
+#Making matrix using byrow=TRUE
+pers <- matrix(c(morten, sigrid,julie),ncol=3,byrow=TRUE)
+pers
+
+#convert to image
+image(pers,col=gray(1:100/100))
+```
+
+Image shows figure at a 90 degree counter-clockwise rotation of the conventional printed layout of a matrix
+
+#Making a function to rotate the image in R
+```{r}
+#using t() and rev() to rotate the matrix for display
+rotate <- function(x) t(apply(x, 2, rev))
+pers2<-rotate(pers)
+#convert to image
+image(pers2,col=gray(1:100/100))
+```
+
+#The sum of two matrices
+```{r}
+#adding two matrices means adding corresponding cells
+perspers<-pers + pers
+perspers
+```
+
+###Multiplying two matrices
+```{r}
+#If A is an r ?? c matrix and B a c ?? t matrix, i.e. B = [b1 : b2 : ?? ?? ?? : bt]. The product AB is the r ?? t matrix
+A<-matrix(1:8,ncol=2)
+A
+B<-matrix(1:10,nrow=2)
+B
+#Multiplying two matrices using %*%
+C=A%*%B
+C
+D=B%*%A
+D
+```
+
+##Some special matrices
+
+??? An n ?? n matrix is a square matrix
+??? A matrix A is symmetric if A = A???.
+??? A matrix with 0 on all entries is the 0???matrix and is often written simply as 0.
+??? A matrix consisting of 1s in all entries is often written J.
+??? A square matrix with 0 on all off???diagonal entries and elements d1, d2, . . . , dn on the diagonal a diagonal matrix and is often written diag{d1, d2, . . . , dn}
+??? A diagonal matrix with 1s on the diagonal is called the identity matrix and is denoted I. The identity matrix satisfies that IA = AI = A. Likewise, if x is a vector then Ix = x.
+
+###A matrix with ones in all entries
+```{r}
+#A matrix with ones in all entries
+J<-matrix(1,nrow=4,ncol=4)
+J
+```
+###A diagonal matrix
+```{r}
+#diagonal matrices
+A<-diag(c(1:4))
+A
+```
+###A symmetrical matrix
+```{r}
+#diagonal matrices are symmetrical
+A<-diag(c(1:4))
+A
+t(A)
+#A=t(A)
+A-t(A)
+```
+###Identity matrix
+```{r}
+#A diagonal matrix with 1s on the diagonal is called the identity matrix and is denoted I. The identity matrix satisfies that IA = AI = A. Likewise, if x is a vector then Ix = x.
+A<-matrix(c(1:16),nrow=4)
+'A:'
+A
+I<-diag(4)
+I
+'A*I=A:'
+A%*%I
+'I*A=A:'
+I%*%A
+```
+
+###Inverting a matrix
+```{r}
+#Lets use the personality test data
+pers3<-matrix(c(julie, sigrid, morten),nrow=3,byrow=TRUE)
+pers3
+invpers3<-solve(pers3)
+invpers3
+#See if we get the identity Matrix by multiplication (and rounding)
+round(pers3%*%invpers3)
+```
+
+###Let's try with a  matrix with co-linear structure 
+```{R}
+#What happens if we exchange sigrid with Mini_julie
+pers3<-matrix(c(morten, julie, mini_julie),nrow=3,byrow=TRUE)
+pers3
+solve(pers3)
+```
+
+###Solving a linear regression 
+```{R}
+#Get sleepstudy data from lme4
+library(lme4)
+#Get participant 308 from sleepstudy
+sleep308<-subset(sleepstudy,Subject==308)
+attach(sleep308)
+
+#Make a scatter plot
+plot(Days,Reaction,type='p')
+
+#Make a dexign matrix with Days and a dummy of ones for getting the intercept
+const<-rep(1,10)
+X<-matrix(c(Days,const),ncol=2)
+X
+#Getting the fit
+beta<-solve(t(X)%*%X)%*%t(X)%*%Reaction
+beta
+#Adding a line to the plot Days on X-axis, intercept plus slope*days on y-axis
+lines(c(Days[1],Days[10]),c(beta[2]+beta[1]*Days[1],beta[2]+beta[1]*Days[10]),col='darkred')
+```
+
+##Extra material
+
+###Indexing vectors and matrices
+```{R}
+#Use square brackets to index matrices,e.g. 
+#the second row of the first column is [2,1]
+mat1<-matrix(1:10,ncol=2)
+mat1[2,1]
+#if you want all rows in a column, you can leave the first index empty
+mat1[ ,1]
+#and similarly for all columns in a row
+mat1[1, ]
+```
+
+###Multiplying to matrices element by element
+```{R}
+#Often you are not interested in matrix multiplication, but only in multiplying the individual elements of two matrices element by element.
+#This is easy, the only requirement is that the matrices have the same size
+
+#A 5x2 matrix with numbers 1:10
+mat1<-matrix(1:10,ncol=2)
+#A 5x2 matrix with 1s in column 1, 2s in column 2
+mat2<-matrix(rep(1:2,5),ncol=2,byrow=TRUE)
+mat1
+mat2
+mat1*mat2
+```
+
+###Working with vectors and matrices element by element
+```{R}
+#You can perform addition, subtracttion, multiplication and division
+#on vectors and matrices element by element
+
+#A 5x2 matrix with numbers 1:10
+mat1<-matrix(1:10,ncol=2)
+mat1
+(mat1-2)/2
+
+#If they have the same size, you can also take a vector and multiply it on a matrix, e.g. row by row
+#Multiply a both columns of a matrix with its own first column
+mat1[,1]*mat1
+```

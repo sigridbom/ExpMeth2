@@ -1,0 +1,191 @@
+---
+title: "Portofolio 2"
+author: ", Morten Gade, Anders Hjuldmand, Sigrid, Gustav Helms"
+date: "2/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+getwd()
+knitr::opts_chunk$set(echo = TRUE)
+
+pacman::p_load(tidyverse, lme4)
+
+df <- read.csv('sleepstudy.csv')
+```
+
+## Task 1: Linear regression
+### 1.a: Make a constant vector of the same length as the data, consisting of ones.
+
+### 1.b: Report the inner product (aka dot product) of the days vector and the constant vector.
+
+### 1.c: What does the dot product say about the possibility of finding an optimal linear regression?
+The inner product is not 0 (it's 45) and the vectors are therefore not orthogonal, which means that they are not completely correlated. 
+
+### 1.d: Create a 10x2 matrix called X with the days vector and constant vector as columns and use the least squares method manually to find the optimal coefficients (i.e. slope and intercept) to reaction time.
+
+Slope 11.29807
+Intercept	267.04480 
+
+### 1.e: Check result using lm(). Use the formula lm(Reaction372~0+X) - the zero removes the default constant.
+
+### 1.f: Subtract the mean of Days372 from the Days372 vector. Replace the days vector with the new vector in X and redo the linnear regression. Did the coefficients change? (we will return to why this happened in a later class, but if you are curious, you can check this website out: https://www.theanalysisfactor.com/center-on-the-mean/)
+
+Slope: 11.3 - the same
+Intercept: 317.9 - changed
+
+### 1.g: Make a scatter plot with the mean-centered days covariate against response time and add the best fitted line
+
+```{r}
+
+#1a
+Reaction372 <- c(269.41, 273.47, 297.60, 310.63, 287.17, 329.61, 334.48, 343.22, 369.14, 364.12) 
+
+Days372 <- c(0,1,2,3,4,5,6,7,8,9)
+
+vec_1 <- c(1,1,1,1,1,1,1,1,1,1)
+#smartere
+vec <- rep(1,10)
+
+#1b
+sum(vec*Days372)
+
+#1d
+x <- matrix(c(Days372, vec), ncol=2, nrow=10, byrow=F)
+
+Reaction <- filter(df, df$Subject == '372')
+
+beta <- solve(t(x) %*% x) %*% t(x) %*% Reaction$Reaction
+
+#1e
+lm(Reaction372 ~ 0 + x)
+
+#1f
+vec_day <- Days372 - mean(Days372)
+x1 <- matrix(c(vec_day, vec), ncol=2, nrow=10, byrow=F)
+
+lm(Reaction372 ~ 0 + x1)
+
+
+#1.g: Make a scatter plot with the mean-centered days covariate against response time and add the best fitted line
+ggplot(df, aes(Days, Reaction)) + geom_point() 
+new_df <- data.frame(vec_day, Reaction$Reaction)
+
+plot(new_df)
+
+ggplot(new_df, aes(vec_day, Reaction.Reaction)) + geom_point() + geom_smooth(method=lm, alpha=0) + labs(x = 'Number of days of sleep deprivation', y = 'Reaction time', title = 'Sleep deprivation over time for participant 372')
+
+#Getting the fit
+beta<-solve(t(X)%*%X)%*%t(X)%*%Reaction
+beta
+#Adding a line to the plot Days on X-axis, intercept plus slope*days on y-axis
+lines(c(Days[1],Days[10]),c(beta[2]+beta[1]*Days[1],beta[2]+beta[1]*Days[10]),col='darkred')
+
+
+```
+
+## Task 2: Images and matrices
+```{r}
+pacman::p_load(jpeg)
+#Load data
+matrix<-readJPEG('portfolio_assignment2_matrices_data.jpg', native = FALSE)
+```
+### 2.a: report how many rows and how many columns the matrix has. What are the maximun, minimum and mean pixel values?
+900 rows and 606 columns. The mean is 0.51, the maximum is 1 and the minimum is 0.06. 
+
+```{r}
+nrow(matrix)
+ncol(matrix)
+mean(matrix)
+max(matrix)
+min(matrix)
+```
+
+### 2.b: Make an image of the loaded matrix. Be sure to rotate the image into the correct orientation. The functions needed are found the in lecture slides. Furthermore, grey scale the picture with gray(1:100/100) - this will color values near 0 black/dark and values near 1 white/light.
+
+```{r}
+image(matrix)
+
+rotate <- function(x) t(apply(matrix, 2, rev))
+matrix2 <- rotate(matrix)
+
+image(matrix2, col = grey(1:100/100))
+
+```
+
+### 2.c: Draw an image with the same dimensions as that from 2.b. But this image should be completely black (hint: use zeros).
+
+```{r}
+#2c
+matrix2c <- matrix(rep(0,100), ncol=50, nrow=50)
+image(matrix2c, col=grey(1:100/100))
+
+```
+
+### 2.d: Draw a white hat on the image from 2.b (hint: use ones).
+
+```{r}
+#2d
+matrix2d <- matrix2
+
+#900 collumns og 606 columns
+
+900*0.8
+600*0.3
+600*0.75
+0.7*600
+
+matrix2d[1, 1] <- 1
+
+matrix2d[180:450,700:725] <- 1
+matrix2d[200:210,700:800] <- 1
+matrix2d[400:410,700:800] <- 1
+matrix2d[200:410,800:810] <- 1
+
+ 
+image(matrix2d, col=grey(1:100/100))
+```
+
+
+### 2.e: Make an image which has the same dimensions as 2.b., and which only contains the parts which was hidden behind the hat in 2.d. The rest should be black.
+
+```{r}
+
+```
+
+## Task 3: Brain and matrices
+### 3.a: Make an image of the brain.
+
+### 3.b: We will attempt to find the interesting areas of this brain image, e.g. only areas with gray matter. To do this we will create two masks, one that filters all darker areas away, and one that filters the white matter away. The masks will work by having zeros at the areas we want to fliter away, and ones at the interesting areas. Thus, the mask will have the intended effect if we do element-wise mutiplication of it with the brain matrix. Start by making an image which is white (have ones) where the pixel values of the brain image are larger than the mean value of the whole image. Let the image be black (have zeros) everywhere else. Call this matrix mask1.
+
+### 3.c: Make an image which is white where the pixel values of the brain image are smaller than 2.5 times the mean value of the whole image. Call this matrix mask2
+
+### 3.d: Convert mask1 and mask2 into one mask with ones where the two masks overlap and zeros everywhere else. What type mathematical procedure can be used to produce this?
+
+### 3.e. Use the combined mask on the brain image to give you an image with only the image values where the mask has ones, and zeros everywhere else. Did we successfully limit our image to only contain gray matter?
+
+### 3.e: Count the number of pixels in the combined mask.
+
+```{r}
+
+```
+
+## Task 4: Two equations with two unkwons
+### 4.a: In the friday bar, men were three times as likely as women to buy beer. A total of 116 beers were sold. Women were twice as likely as men to buy wine. 92 glasses of wine were sold. How many men and women attended the Friday bar?
+
+```{r}
+
+3y + x = 116
+y+ 2x = 92
+
+m <- matrix(c(3,1,1,2), ncol=2, byrow=T)
+
+
+m_inv <- solve(m)
+
+i <- matrix(c(116,92), ncol=1)
+
+m_inv %*% i
+
+```
+
