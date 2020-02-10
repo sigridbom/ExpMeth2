@@ -1,0 +1,105 @@
+---
+title: "lecture1_intro_glm_code"
+author: "Mikkel Wallentin"
+date: "February 1 2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+#Notes and code for lecture 1 in Experimental Methods 2.
+
+```{r}
+#make dataset with 1000 z-scaled data points
+n1000=rnorm(1000, mean=0, sd=1)
+#Plot them sequentially
+plot(seq(1,1000,1),n1000 )
+```
+```{r}
+#Histogram/Probability density plot using ggplot
+library(ggplot2)
+#Make dataframe
+n1000<-data.frame(n1000)
+p<- ggplot(data=n1000, aes(x=n1000, ..density..,))
+p + stat_bin(data=n1000,bins=40)
+```
+
+```{r}
+#Find the upper 97.5 percentile
+n1000_sort<-sort(n1000$n1000)
+n1000_sort[975]
+#Scores above this number are considered ???abnormal??? p<0.05, two-tailed
+```
+
+
+```{r}
+#Visualizing the Libido model
+#--------Viagra data----------
+libido<-c(3,2,1,1,4,5,2,4,2,3,7,4,5,3,6)
+
+#matrix for data model
+viagramat=matrix(data=0,nrow=15, ncol=4)
+viagramat[,c(1)]<-as.matrix(libido)
+viagramat[c(1:5),c(2)]<-1
+viagramat[c(6:10),c(3)]<-1
+viagramat[c(11:15),c(4)]<-1
+
+#Visualize a transposed (t()) scaled (scale()) matrix with data point 1 on top ([15:1])
+image(t(scale(viagramat[15:1,])), axes=FALSE, col=gray(1:10/10))
+```
+####Making a plot with F distribution
+```{r}
+#Making a string of 100 numbers beteen 0 and 20 to use when finding the F distribution
+nn<-seq(0,20,len=100)
+#Getting the F distribution using df()
+fdist<-df(nn,2,12)
+plot(nn,fdist, type='l',xlab='F value - df(2,12)',ylab='Density')
+```
+
+###F-statistics
+```{r}
+#The F statistics for the effect of viagra
+model<-lm(viagramat[,c(1)] ~1+viagramat[,c(3:4)] )
+res=anova(model)
+res
+#Checking p-value using probability function pf()
+pval<-1-pf(res$`F value`[1],2,12)
+'p-value:'
+pval
+#Getting the F-score for the 95% significance cutoff using the quantile function qf()
+cutoff<-qf(0.95,2,12)
+'p=0.05 cutoff value with df(2,12)'
+cutoff
+```
+####Making a F-distribution plot with the cutoff and the resulting F-value
+```{r}
+#Making a string of 100 numbers beteen 0 and 20 to use when finding the F distribution
+nn<-seq(0,20,len=100)
+#Getting the F distribution using df()
+fdist<-df(nn,2,12)
+plot(nn,fdist, type='l',xlab='F value - df(2,12)',ylab='Density')
+#plotting a vertical line at the cutoff
+lines(c(cutoff,cutoff),c(0,1),col='darkgreen')
+#Add explanation for the line
+text(cutoff+2,0.5,'p=0.05',col='darkgreen')
+#draw F-value as point on the curve
+points(res$`F value`[1],df(res$`F value`[1],2,12),col='red')
+```
+###Or a pretty F distribtion using sjPlot
+```{r}
+library(sjPlot)
+dist_f(f=0, deg.f1 = 2, deg.f2 = 12,xmax=20)
+```
+
+###Getting the t-statistics using lm()
+```{r}
+#Model estimation using lm() and the two dose columns as model 
+#1st column (Placebo) is baseline, thus not included in the model.
+model<-lm(viagramat[,c(1)] ~1+viagramat[,c(3:4)] )
+summary(model)
+
+```
+
+###F-statistiscs show that the overall model explains more variance than what would have been expected by chance (F=5.12,p<0.05). 
+
+###Post hoc t-tests show that the low dose is not significantly different from baseline (t=1.12, p<0.05), however the high dose group have a significantly higher libido than the placebo group (t=3.15, p<0.05). Even after correcting for multiple comparisons (dividing by 2), this effect is still significant.

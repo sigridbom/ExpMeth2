@@ -1,0 +1,173 @@
+---
+title: "Portfolio assignment 1"
+author: "Sigrid"
+date: "2/9/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r packages}
+getwd()
+pacman::p_load(tidyverse, sjPlot) 
+
+```
+
+
+```{r load data}
+data <- read_csv("sleepstudy.csv")
+
+class(data$Subject)
+data$Subject <- as.factor(data$Subject)
+
+#overview of data
+str(data)
+
+```
+
+### Task 1
+
+# 1a
+Reporting the F-statistic: 17.12 on 1 and 8 degrees of freedom. 
+
+From the study group's report:
+A linear regression analysis was used to test if the amount of days of sleep deprivation significantly predicted reaction time. The results of the regression indicated that the predictor explained 64.17% of the variance in the reaction time (Adjusted R2 =.6417, F(1,8)= 17.12, p<.01). It was found that a larger duration of sleep deprivation significantly predicted reaction time tendencies (β = 21.77, SE =5.26, t = 4.137, p<.01)
+
+# 1b
+The relevant F-distribution has 1 degree of freedom for predictors and 8 degrees of freedom for subjects.
+
+# 1c
+At which F-value does a regression with this distribution become statistically significant (p<0.05)?
+
+The F-distribution with 1 and 8 degrees of freedom becomes statistically significant (p<.05) at F = 5.3177.
+
+# 1d
+Make a plot of the F-distribution (see above).
+
+```{r 1 a+b+c+d}
+
+### 1a
+#subsetting the data choising only one participant
+part_308 <- subset(data, Subject == '308')
+
+#plotting the data
+ggplot(part_308, aes(part_308$Reaction, Days)) + geom_point() + geom_smooth(method = lm, alpha = 0.2) + labs(title = 'The reaction time of participant 308 according to number of days with sleep deprivation', y = 'Reaction time', x = 'Days of sleep deprivation')
+
+#making a linear regression
+summary(lm(part_308$Reaction ~ part_308$Days, part_308))
+
+#1c
+cutoff<-qf(0.95,1,8)
+'p=0.05 cutoff value with df(1,8)'
+cutoff
+
+# 1d - make a plot of the F-distribution
+library(sjPlot)
+dist_f(f=0, deg.f1 = 1, deg.f2 = 8,xmax=20)
+
+
+#The F statistics for the effect of days on reaction time
+model<-lm(part_308$Reaction~part_308$Days)
+res=anova(model)
+#Making a string of 100 numbers beteen 0 and 20 to use when finding the F distribution
+nn<-seq(0,20,len=100)
+#Getting the F distribution using df()
+fdist<-df(nn,1,8)
+plot(nn,fdist, type='l',xlab='F value - df(1,8)',ylab='Density') #plotting a vertical line at the cutoff 
+lines(c(cutoff,cutoff),c(0,1),col='darkgreen')
+#Add explanation for the line
+text(cutoff+2,0.5,'p=0.05',col='darkgreen')
+#draw F-value as point on the curve
+points(res$`F value`[1],df(res$`F value`[1],1,8),col='red') #add text for the f-value
+text(res$`F value`[1]+2,0.1,'f=17,12',col='darkgreen')
+
+```
+### Task 2
+
+# 2a
+Find the coefficients (slope and intercept) for the regression for reaction time as a function of days of sleep deprivation for all the participants
+
+# 2b
+Combine both scatter plot and regression line in the same figure. You may also include all participants in one plot.
+
+# 2c
+Collect and report the inferential statistics for each participant in a table using t-statistics, including t-value, df and p-value.
+
+# 2d
+How many individual participants display a statistically significant effect of sleep deprivation (p-values uncorrected for mulitple comparisons)?
+
+14 out of 18 are significant. 
+
+```{r 2 a+b+c+d}
+##### 2a
+all_subjects <- data %>% group_by(Subject) %>% summarise("Intercept" = lm(Reaction ~ Days)$coefficients[1], "Slope" = lm(Reaction ~ Days)$coefficients[2])
+
+all_subjects
+
+###### 2b
+group_by_part <- group_by(data, Subject)
+ggplot(group_by_part, aes(Days, Reaction)) + geom_point() + geom_smooth(method = lm)
+
+# eller
+
+ggplot(data, aes(Days, Reaction, colour = Subject)) + geom_point() + geom_smooth(method = lm, alpha = 0, size = 0.5) + labs(title = 'Scatterplot and regression line for each subject')
+
+##### 2c
+
+#Adding the inferential t-statistics to the df
+all_subjects <- data %>% group_by(Subject) %>% summarise("Intercept" = lm(Reaction~Days)$coefficients[1], "t-value_intercept" = summary(lm(Reaction~Days))$coefficients[1,3],
+"p-value_intercept" = summary(lm(Reaction~Days))$coefficients[1,4], 
+"Slope" = lm(Reaction~Days)$coefficients[2],  
+"t-value_slope" = summary(lm(Reaction~Days))$coefficients[2,3],
+"p-value_slope" = summary(lm(Reaction~Days))$coefficients[2,4], "df" = lm(Reaction~Days)$df.residual)
+
+test1 <- summary(lm(Reaction ~Days, data))
+view(test1)
+
+#Adding a collumn with marked "*" if p<0.05.
+all_subjects$significant <- ifelse(all_subjects$`p-value_slope`<0.05,"*"," ") 
+
+print.data.frame(all_subjects)
+
+##### 2d
+sum(all_subjects$'p-value_slope' < 0.05)
+
+```
+
+### Task 3
+
+# 3a
+Use the slopes you found for each participant in exercise 2 as a new dataset. Test the hypothesis that the slopes are larger than zero against the null-hypothesis that the slopes are zero (i.e. no differences in response time exist as a function of time).
+
+*Results: Sleep deprivation has a significant effect on reaction time, since the mean of the sample significantly differed from 0 (p<.001).*
+
+# 3b
+Justify your use of test statistics.
+
+*We are testing if our sample is significantly different from the null hypothesis, that sleep deprivation has no effect on reaction time. We are thereby comparing one set of means (our sample) to a fixed mean (null hypothesis, 0). Thus, the one sample t-test is the a good choice of statistical test. Plus, the data could be assumed to be normal according to the Shapiro Wilk's test, and the assumptions of the one-sample t-test are thereby met.*
+
+# 3c
+Report inferential statistics.
+
+*When conducting a one-sample t-test on the data, it is evident that sleep deprivation has a significant effect on reaction time among the participants, t(17) = 6.77, p<.001 (p = 3.264e-06), M = 10.47. Here the mean is the increase in reaction time during the period of time (days) of sleep deprivation.*
+
+# 3d
+Make a plot with the mean reaction time and standard errror bars for each day across participants and plot the averaged regression line in the same figure.
+
+```{r 3 a+b+c+d}
+
+#### 3a
+shapiro.test(all_subjects$Slope)
+# very high p-value (p = 0.94), we can assume normality
+hist(all_subjects$Slope) #also looks good
+
+t.test(all_subjects$Slope)
+
+#### 3d 
+ggplot(data, aes(Days, Reaction)) + stat_summary(fun.y = mean, geom = 'point', colour = 'black') + stat_summary(fun.data = mean_se, geom = 'errorbar', width = 0.3) + geom_smooth(method = lm, alpha = 0) + ggtitle("Mean reaction time pr. day across participants with se-bars")
+       
+```
+
