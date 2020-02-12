@@ -113,8 +113,8 @@ image(matrix2, col = grey(1:100/100))
 matrix2c <- matrix(rep(0,100), ncol=50, nrow=50)
 image(matrix2c, col=grey(1:100/100))
 
-matrix2c[,] <- 0.5
-image(matrix2c)
+matrix2c[,] <- 0
+image(matrix2c, col=grey(seq(0, 1,)))
 
 ```
 
@@ -136,10 +136,8 @@ matrix2d[130:490,700:720] <- 1
 matrix2d[175:435,700:830] <- 1
 matrix2d[175:435,720:730] <- 0.3
 
- 
 image(matrix2d, col=grey(1:100/100))
 ```
-
 
 ### 2.e: Make an image which has the same dimensions as 2.b., and which only contains the parts which was hidden behind the hat in 2.d. The rest should be black.
 900 rows and 606 columns. The mean is 0.51, the maximum is 1 and the minimum is 0.06. 
@@ -147,25 +145,60 @@ image(matrix2d, col=grey(1:100/100))
 ```{r}
 matrix2e <- matrix2
 
-matrix2e[,831:900] <- 1
-matrix2e[,1:699] <- 1
-matrix2e[1:129,] <- 1
-matrix2e[491:606,] <- 1
-matrix2e[130:174,721:900]
-matrix2e[436:606,721:900]
+matrix2e[,831:900] <- 0
+matrix2e[,1:699] <- 0
+matrix2e[1:129,] <- 0
+matrix2e[491:606,] <- 0
+matrix2e[130:174,721:900] <- 0
+matrix2e[436:606,721:900] <- 0
 
 
 #matrix2d[130:490,700:720] <- 1
 #matrix2d[175:435,700:830] <- 1
 
-image(matrix2e, col=grey(1:100/100))
+image(matrix2e, col=grey(0:100/101))
 
 ```
 
 ## Task 3: Brain and matrices
 ### 3.a: Make an image of the brain.
 
+```{r}
+library(jpeg)
+##Load data
+brain<-readJPEG('portfolio_assignment2_matrices_data2.jpg', native = FALSE)
+rotate <- function(x) t(apply(brain, 2, rev))
+brain <- rotate(brain)
+image(brain, col=grey(1:100/100))
+```
+
 ### 3.b: We will attempt to find the interesting areas of this brain image, e.g. only areas with gray matter. To do this we will create two masks, one that filters all darker areas away, and one that filters the white matter away. The masks will work by having zeros at the areas we want to fliter away, and ones at the interesting areas. Thus, the mask will have the intended effect if we do element-wise mutiplication of it with the brain matrix. Start by making an image which is white (have ones) where the pixel values of the brain image are larger than the mean value of the whole image. Let the image be black (have zeros) everywhere else. Call this matrix mask1.
+
+```{r}
+#3b - making mask1
+
+nrow(brain) # 512 rows
+ncol(brain) # 512 calumns
+mean_brain <- mean(brain) # mean pixel value is 0.1869753
+max(brain) # maximum pixel value is 0.9764706
+min(brain) # minimum pixel value is 0
+
+mask1 <- brain
+
+mask1 <- ifelse mask1[,] => mean_brain <- 1
+
+mask1[,1] > mean_brain <- 1
+
+mask1 <- if (i in 1:512) x[i, i] > mean_brain <- 1.0 #Make the diagonal all 1's
+
+
+mask1 <- matrix(ifelse: brain[,] > mean_brain <-  1 else <-  0)
+
+matrix2c <- matrix(rep(0,100), ncol=50, nrow=50)
+ncol=512, nrow = 512
+
+```
+
 
 ### 3.c: Make an image which is white where the pixel values of the brain image are smaller than 2.5 times the mean value of the whole image. Call this matrix mask2
 
@@ -183,18 +216,17 @@ image(matrix2e, col=grey(1:100/100))
 ### 4.a: In the friday bar, men were three times as likely as women to buy beer. A total of 116 beers were sold. Women were twice as likely as men to buy wine. 92 glasses of wine were sold. How many men and women attended the Friday bar?
 
 ```{r}
+#4a
+#3y + x = 116
+#y + 2x = 92
 
-3y + x = 116
-y+ 2x = 92
-
-m <- matrix(c(3,1,1,2), ncol=2, byrow=T)
-
+m <- matrix(c(3,1,1,2), ncol = 2, byrow = T)
 
 m_inv <- solve(m)
 
-i <- matrix(c(116,92), ncol=1)
+i <- matrix(c(116,92), ncol = 1)
 
 m_inv %*% i
 
 ```
-
+In the Friday bar there were 28 men and 32 women. 
