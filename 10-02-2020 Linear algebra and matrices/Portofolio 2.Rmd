@@ -177,32 +177,46 @@ image(brain, col=grey(1:100/100))
 ```{r}
 #3b - making mask1
 
-nrow(brain) # 512 rows
-ncol(brain) # 512 calumns
-mean_brain <- mean(brain) # mean pixel value is 0.1869753
+brain_row <- nrow(brain) # 512 rows
+brain_col <- ncol(brain) # 512 calumns
+brain_mean <- mean(brain) # mean pixel value is 0.1869753
 max(brain) # maximum pixel value is 0.9764706
 min(brain) # minimum pixel value is 0
 
+#mask1 <- matrix(0, nrow=512, ncol=512)
+
 mask1 <- brain
 
-mask1 <- ifelse mask1[,] => mean_brain <- 1
+mask1[brain > brain_mean] <- 1
+mask1[brain <= brain_mean] <- 0
 
-mask1[,1] > mean_brain <- 1
-
-mask1 <- if (i in 1:512) x[i, i] > mean_brain <- 1.0 #Make the diagonal all 1's
-
-
-mask1 <- matrix(ifelse: brain[,] > mean_brain <-  1 else <-  0)
-
-matrix2c <- matrix(rep(0,100), ncol=50, nrow=50)
-ncol=512, nrow = 512
+image(mask1, col=grey(0:100/101))
 
 ```
 
 
 ### 3.c: Make an image which is white where the pixel values of the brain image are smaller than 2.5 times the mean value of the whole image. Call this matrix mask2
 
+```{r}
+
+mask2 <- brain
+mask2[brain < 2.5*brain_mean] <- 1
+
+image(mask2, col=grey(0:100/101))
+
+```
+
+
 ### 3.d: Convert mask1 and mask2 into one mask with ones where the two masks overlap and zeros everywhere else. What type mathematical procedure can be used to produce this? 
+
+```{r}
+
+full_mask <- matrix(0, nrow = brain_row, ncol = brain_col)
+full_mask[mask1 + mask2 == 2] <- 1
+full_mask[mask1 + mask2 == 1 | 0] <- 0
+
+```
+
 
 ### 3.e. Use the combined mask on the brain image to give you an image with only the image values where the mask has ones, and zeros everywhere else. Did we successfully limit our image to only contain gray matter?
 
@@ -210,6 +224,10 @@ ncol=512, nrow = 512
 
 ```{r}
 
+image(full_mask, col=grey(0:100/101))
+
+sum(full_mask)
+# 50,004 pixels
 ```
 
 ## Task 4: Two equations with two unkwons
