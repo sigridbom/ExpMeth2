@@ -20,7 +20,7 @@ df <- read.csv('sleepstudy.csv')
 ### 1.b: Report the inner product (aka dot product) of the days vector and the constant vector.
 
 ### 1.c: What does the dot product say about the possibility of finding an optimal linear regression?
-The inner product is not 0 (it's 45) and the vectors are therefore not orthogonal, which means that they are not completely correlated. 
+The inner product is not 0 (it's 45) and the vectors are therefore not orthogonal. This means that they are not completely uncorrelated. 
 
 ### 1.d: Create a 10x2 matrix called X with the days vector and constant vector as columns and use the least squares method manually to find the optimal coefficients (i.e. slope and intercept) to reaction time.
 
@@ -140,7 +140,6 @@ image(matrix2d, col=grey(1:100/100))
 ```
 
 ### 2.e: Make an image which has the same dimensions as 2.b., and which only contains the parts which was hidden behind the hat in 2.d. The rest should be black.
-900 rows and 606 columns. The mean is 0.51, the maximum is 1 and the minimum is 0.06. 
 
 ```{r}
 matrix2e <- matrix2
@@ -156,6 +155,7 @@ matrix2e[436:606,721:900] <- 0
 #matrix2d[130:490,700:720] <- 1
 #matrix2d[175:435,700:830] <- 1
 
+image
 image(matrix2e, col=grey(0:100/101))
 
 ```
@@ -189,6 +189,7 @@ mask1 <- brain
 
 mask1[brain > brain_mean] <- 1
 mask1[brain <= brain_mean] <- 0
+#mask2 <- ifelse((brain > brain_mean), 1, 0)
 
 image(mask1, col=grey(0:100/101))
 
@@ -215,6 +216,8 @@ full_mask <- matrix(0, nrow = brain_row, ncol = brain_col)
 full_mask[mask1 + mask2 == 2] <- 1
 full_mask[mask1 + mask2 == 1 | 0] <- 0
 
+image(full_mask, col=grey(0:100/101))
+
 ```
 
 
@@ -224,10 +227,12 @@ full_mask[mask1 + mask2 == 1 | 0] <- 0
 
 ```{r}
 
-image(full_mask, col=grey(0:100/101))
+brain_new <- ifelse((full_mask == 1), brain,0)
+
+image(brain_new, col=grey(1:100/100))
 
 sum(full_mask)
-# 50,004 pixels
+# total number of pixels is 50,004 pixels
 ```
 
 ## Task 4: Two equations with two unkwons
