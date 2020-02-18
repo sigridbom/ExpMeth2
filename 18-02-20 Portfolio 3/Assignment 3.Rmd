@@ -19,7 +19,7 @@ separate file. The task is to perform a regresion with these two different indep
 models and also adding an additional covariate.
 
 ```{r}
-pacman::p_load(tidyverse)
+pacman::p_load(tidyverse, reshape2)
 ```
 
 
@@ -44,39 +44,12 @@ between participants.
 
 ```{r task 1}
 
-fmri_test <- data.frame(fmri2)
-frmi_test <- group_by(ncol)
-ggplot(fmri_test, aes(1:400, V1)) + geom_line()
-
-plotmatrix(frmi2)
-
-
-plot(x = fmri2(1:400,), y = frmi2(,1:37))
-plot(fmri2)
-vec <- c(fmri2)
-
-plot(vec)
-
-for (i in 1:37) {
-  ()
-}
-  
-
-i <- matrix(rep(1:400), ncol = 1, byrow = T)
-
-fmri_inv <- solve(fmri2)
-
-m <- matrix(c(3,1,1,2), ncol = 2, byrow = T)
-
-fmri_inv <- solve(fmri2)
-
-i <- matrix(c(116,92), ncol = 1)
-
-m_inv %*% i
 
 #first matrix must have the same amount f columns as the second matrix has rows
-pacman::p_load(reshape2)
-ggplot(melt(fmri2), aes(x = Var1, y = value, color = Var2)) + geom_smooth(method=lm)
+
+ggplot(melt(fmri2), aes(x = Var1, y = value, color = Var2)) + geom_smooth(method = lm)
+
+ggplot(melt(fmri2), aes(x = Var1, y = value, color = Var2)) + geom_line()
 
 #1b
 boxplot(fmri2, use.cols = T)
