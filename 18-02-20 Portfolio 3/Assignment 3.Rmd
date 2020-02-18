@@ -1,0 +1,84 @@
+---
+title: "Assignment 3"
+author: "Sigrid"
+date: "2/18/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+fMRI single voxel data exercise
+In this excercise we are going to look at data from an unpublished fMRI experiment. 400 whole-brain EPI
+images were acquired for each participant, but in this assignment, we will analyse a time-series from a
+single voxel in auditory cortex (transverse temporal gyrus, MNI coordinate: [-46,-20,6], with all time-points
+converted into a vector). A total of 37 participants were scanned. They listened to two types of stories
+(fiction and factual). A model of the hemodynamic response to the different story types are included in a
+separate file. The task is to perform a regresion with these two different independent variables using different
+models and also adding an additional covariate.
+
+```{r}
+pacman::p_load(tidyverse)
+```
+
+
+```{r cars}
+##data
+fmri <- as.matrix(read.csv("portfolio_assignment3_aud_fmri_data37.csv", header = FALSE))
+##making it a time-series
+fmri2 <- ts(fmri)
+##design
+fmrides <- as.matrix(read.csv("portfolio_assignment3_aud_fmri_design.csv", header=FALSE))
+##making it a time-series
+fmrides2 <- ts(fmrides)
+```
+
+# Task1
+Initial figures
+1. Make three figures:
+1.a. A figure with lineplots of the data from all participants as a function of time in one figure.
+1.b. A boxplot with the signal intensity for each participant. Note how much the baseline signal can vary
+between participants.
+1.c. A lineplots figure with the model covariates.
+
+```{r task 1}
+
+fmri_test <- data.frame(fmri2)
+frmi_test <- group_by(ncol)
+ggplot(fmri_test, aes(1:400, V1)) + geom_line()
+
+plotmatrix(frmi2)
+
+
+plot(x = fmri2(1:400,), y = frmi2(,1:37))
+plot(fmri2)
+vec <- c(fmri2)
+
+plot(vec)
+
+for (i in 1:37) {
+  ()
+}
+  
+
+i <- matrix(rep(1:400), ncol = 1, byrow = T)
+
+fmri_inv <- solve(fmri2)
+
+m <- matrix(c(3,1,1,2), ncol = 2, byrow = T)
+
+fmri_inv <- solve(fmri2)
+
+i <- matrix(c(116,92), ncol = 1)
+
+m_inv %*% i
+
+#first matrix must have the same amount f columns as the second matrix has rows
+pacman::p_load(reshape2)
+ggplot(melt(fmri2), aes(x = Var1, y = value, color = Var2)) + geom_smooth(method=lm)
+
+#1b
+boxplot(fmri2, use.cols = T)
+```
+
