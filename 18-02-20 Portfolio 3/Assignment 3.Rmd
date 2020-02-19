@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-fMRI single voxel data exercise
+### fMRI single voxel data exercise
 In this excercise we are going to look at data from an unpublished fMRI experiment. 400 whole-brain EPI
 images were acquired for each participant, but in this assignment, we will analyse a time-series from a
 single voxel in auditory cortex (transverse temporal gyrus, MNI coordinate: [-46,-20,6], with all time-points
@@ -44,14 +44,141 @@ between participants.
 
 ```{r task 1}
 
-
 #first matrix must have the same amount f columns as the second matrix has rows
 
-ggplot(melt(fmri2), aes(x = Var1, y = value, color = Var2)) + geom_smooth(method = lm)
+melt(fmri2)
 
 ggplot(melt(fmri2), aes(x = Var1, y = value, color = Var2)) + geom_line()
 
 #1b
 boxplot(fmri2, use.cols = T)
+
+#1c
+plot1 <- plot(fmrides2)
+```
+# Task 2
+Investigating model
+2. Based on the shape of the model: How many stories did the participants listen to in each condition (you can also automatise this, e.g. using “findpeaks” in library(pracma))?
+```{r}
+pacman::p_load(pracma)
+
+peak_1 <- findpeaks(fmrides[,1])
+peak_2 <- findpeaks(fmrides[,2])
+
+length(peak_1[,1]) + length(peak_2[,1])
+
+# when counted - 30 peaks = stories
+
 ```
 
+# Task 3
+3.a. Are the two model covariates correlated? 
+```{r}
+vec_fmrides2_1 <- fmrides2[,1]
+vec_fmrides2_2 <- fmrides2[,2]
+
+sum(vec_fmrides2_1*vec_fmrides2_2)
+
+# Dot product is -216.5828, i.e. not orthogonal, i.e. some sort of correlation
+
+cor.test(vec_fmrides2_1, vec_fmrides2_2)
+# cor test equals -0.54
+```
+
+3.b. Have the covariates been mean-centered?
+
+```{r}
+
+sum(vec_fmrides2_1)
+sum(vec_fmrides2_2)
+
+# Close enough to 0, they have been mean centered. 
+```
+
+# Task 4
+4. Please report the percentage of shared variance in the two covariates.
+
+```{r}
+
+-0.5428111^2
+
+# the percentage of shared variance in the two covarites is R^2, which is the result of the correlation test
+# The shared variance is -0.2946
+
+```
+
+
+# Task 5
+Analyses
+Single participant:
+5. Pick one participant’s data set.
+
+Conduct 6 analyses using lm():
+5.a. Fit the model as it is, including intercept. 
+5.b. Fit the model as it is, excluding intercept. 
+5.c. Fit only the 1st covariate as a model.
+5.d. Fit only the 2nd covariate as a model.
+The residuals represent the variance left when fitting a model. They are thus data that have been “cleaned” from the variance explained by the model. We can use those “cleaned” data to fit another model on. This is similar to using a type III sum of squares approach to your statistics.
+5.e. Fit the 2nd covariate to the residuals from analysis 5.c., the 1st covariate only analysis
+5.f. Fit the 1st covariate to the resistuals from 5.d., the 2nd covariate only analysis
+5.g. Does the order in which the predictor variables are fitted to the data matter for the estimates? If it does, what can explain this?
+*Small difference, pretty much the same estimates.*
+
+
+```{r}
+#5 Pick one participant's data set
+part_fmri2 <- fmri2[,1]
+
+#5.a. Fit the model as it is, including intercept. 
+summary(lm(part_fmri2 ~ fmrides2))
+
+#5.b. Fit the model as it is, excluding intercept. 
+part_fmri2_mean <- mean(part_fmri2)
+part_fmri2_minus <- part_fmri2 - part_fmri2_mean
+sum(part_fmri2_minus)
+
+summary(lm(part_fmri2_minus ~ fmrides2))
+
+#5.c. Fit only the 1st covariate as a model.
+fmrides2_1st <- fmrides2[,1]
+model_5c <- lm(part_fmri2 ~ fmrides2_1st)
+
+#5.d. Fit only the 2nd covariate as a model.
+fmrides2_2nd <- fmrides2[,2]
+model_5d <- lm(part_fmri2 ~ fmrides2_2nd)
+
+#The residuals represent the variance left when fitting a model. They are thus data that have been “cleaned” from the variance explained by the model. We can use those “cleaned” data to fit another model on. This is similar to using a type III sum of squares approach to your statistics.
+#5.e. Fit the 2nd covariate to the residuals from analysis 5.c., the 1st covariate only analysis
+
+residuals_5e <- resid(lm(part_fmri2 ~ fmrides2_1st))
+summary(lm(residuals_5e ~ fmrides2[,2]))
+# one liner
+lm((resid(model_5c)) ~ fmrides2[,2])
+
+
+#5.f. Fit the 1st covariate to the resistuals from 5.d., the 2nd covariate only analysis
+
+lm((resid(model_5d)) ~ fmrides2[,1])
+
+```
+
+
+# Task 6
+Group level analyses
+6. Fit the full model to each of the 37 participants’ data and extract the coefficients for each participant. (hint: the full participant data frame can be set as outcome. Alternatively, you can change the data
+structure and use lmList from assignement 1 (remember pool=FALSE)).
+6.a. Test the two individual hypotheses that the set of coefficient from each covariate is different from zero across the whole group (similar to assignment 1).
+Make a contrast that investigates the difference between the two covariates, i.e. the two types of stories (hint: subtraction).
+6.b. Test the hypothesis that the contrast is different from zero across participants.
+6.c. Make a bar diagram including the mean effect of the two coefficents and the contrast, including error bars (indicating standard error of mean).
+Adding a covariate
+7.a. For each partipant, add a covariate that models the effect of time (hint: 1:400). 7.a. Does that improve the group results in term of higher t-values?
+8. Make a bar diagram like in 6.c., but display effects as percent signal change (hint: percent signal change is slope divided by intercept).
+2
+
+# Reporting:
+Use r_markdown in RStudio for your report. Submit report as a single pdf-file. Include commented code and figures all the way from data import. Remember to look through your assignment and make it as reader friendly as possible.
+Submit report to Blackboard.
+
+# Details
+These fMRI data are from an unpublished experiment conducted in Aarhus at CFIN. 37 participants listened to two different kinds of stories of different length. The onsets and durations for each kind is modelled in the two design variables that take into account the hemodynamic response function. 400 fMRI volumes were acquired with at repetition time of 3.5 seconds.The data from each participants were gathered from the voxel with the MNI coordinates: [-46,-20,6] in the proximity of the left primary auditory cortex.
