@@ -81,7 +81,7 @@ sum(vec_fmrides2_1*vec_fmrides2_2)
 
 # Dot product is -216.5828, i.e. not orthogonal, i.e. some sort of correlation
 
-cor.test(vec_fmrides2_1, vec_fmrides2_2)
+cor <- cor.test(vec_fmrides2_1, vec_fmrides2_2)
 # cor test equals -0.54
 ```
 
@@ -100,7 +100,7 @@ sum(vec_fmrides2_2)
 
 ```{r}
 
--0.5428111^2
+cor$estimate^2
 
 # the percentage of shared variance in the two covarites is R^2, which is the result of the correlation test
 # The shared variance is -0.2946
@@ -111,68 +111,138 @@ sum(vec_fmrides2_2)
 # Task 5
 Analyses
 Single participant:
+
 5. Pick one participant’s data set.
-
-Conduct 6 analyses using lm():
-5.a. Fit the model as it is, including intercept. 
-5.b. Fit the model as it is, excluding intercept. 
-5.c. Fit only the 1st covariate as a model.
-5.d. Fit only the 2nd covariate as a model.
-The residuals represent the variance left when fitting a model. They are thus data that have been “cleaned” from the variance explained by the model. We can use those “cleaned” data to fit another model on. This is similar to using a type III sum of squares approach to your statistics.
-5.e. Fit the 2nd covariate to the residuals from analysis 5.c., the 1st covariate only analysis
-5.f. Fit the 1st covariate to the resistuals from 5.d., the 2nd covariate only analysis
-5.g. Does the order in which the predictor variables are fitted to the data matter for the estimates? If it does, what can explain this?
-*Small difference, pretty much the same estimates.*
-
 
 ```{r}
 #5 Pick one participant's data set
 part_fmri2 <- fmri2[,1]
 
+```
+
+Conduct 6 analyses using lm():
+5.a. Fit the model as it is, including intercept. 
+
+```{r}
 #5.a. Fit the model as it is, including intercept. 
 summary(lm(part_fmri2 ~ fmrides2))
+```
 
+5.b. Fit the model as it is, excluding intercept. 
+
+```{r}
 #5.b. Fit the model as it is, excluding intercept. 
 part_fmri2_mean <- mean(part_fmri2)
 part_fmri2_minus <- part_fmri2 - part_fmri2_mean
 sum(part_fmri2_minus)
 
 summary(lm(part_fmri2_minus ~ fmrides2))
+```
+
+5.c. Fit only the 1st covariate as a model.
+
+```{r}
 
 #5.c. Fit only the 1st covariate as a model.
 fmrides2_1st <- fmrides2[,1]
 model_5c <- lm(part_fmri2 ~ fmrides2_1st)
+model_5c
 
+model_5c <- lm(part_fmri2 ~ fmrides2[,1])
+model_5c
+```
+
+5.d. Fit only the 2nd covariate as a model.
+```{r}
 #5.d. Fit only the 2nd covariate as a model.
 fmrides2_2nd <- fmrides2[,2]
 model_5d <- lm(part_fmri2 ~ fmrides2_2nd)
+model_5d <- lm(part_fmri2 ~ fmrides2[,2])
 
-#The residuals represent the variance left when fitting a model. They are thus data that have been “cleaned” from the variance explained by the model. We can use those “cleaned” data to fit another model on. This is similar to using a type III sum of squares approach to your statistics.
-#5.e. Fit the 2nd covariate to the residuals from analysis 5.c., the 1st covariate only analysis
-
-residuals_5e <- resid(lm(part_fmri2 ~ fmrides2_1st))
-summary(lm(residuals_5e ~ fmrides2[,2]))
-# one liner
-lm((resid(model_5c)) ~ fmrides2[,2])
-
-
-#5.f. Fit the 1st covariate to the resistuals from 5.d., the 2nd covariate only analysis
-
-lm((resid(model_5d)) ~ fmrides2[,1])
-
+model_5d
 ```
 
+The residuals represent the variance left when fitting a model. They are thus data that have been “cleaned” from the variance explained by the model. We can use those “cleaned” data to fit another model on. This is similar to using a type III sum of squares approach to your statistics.
+
+5.e. Fit the 2nd covariate to the residuals from analysis 5.c., the 1st covariate only analysis
+
+```{r}
+
+# one liner
+summary(lm((resid(model_5c)) ~ fmrides2[,2]))
+```
+
+5.f. Fit the 1st covariate to the resistuals from 5.d., the 2nd covariate only analysis
+
+```{r}
+summary(lm((resid(model_5d)) ~ fmrides2[,1]))
+```
+
+
+5.g. Does the order in which the predictor variables are fitted to the data matter for the estimates? If it does, what can explain this?
+*Small difference, pretty much the same estimates.*
 
 # Task 6
 Group level analyses
 6. Fit the full model to each of the 37 participants’ data and extract the coefficients for each participant. (hint: the full participant data frame can be set as outcome. Alternatively, you can change the data
 structure and use lmList from assignement 1 (remember pool=FALSE)).
+```{r}
+m <- lm(fmri2 ~ fmrides2)
+
+#intercepts
+m$coefficient[1,]
+
+#slopes
+m$coefficients[2,]
+
+# making a data frame
+df <- data.frame('Intercept' = m$coefficients[1,], 'V1' = m$coefficients[2,], 'V2' = m$coefficients[3,])
+
+df
+
+```
+
 6.a. Test the two individual hypotheses that the set of coefficient from each covariate is different from zero across the whole group (similar to assignment 1).
+
+
+```{r}
+
+t.test(df$V1)
+t.test(df$V2)
+```
 Make a contrast that investigates the difference between the two covariates, i.e. the two types of stories (hint: subtraction).
+
 6.b. Test the hypothesis that the contrast is different from zero across participants.
+
+```{r}
+
+df$contrast <- df$V1 - df$V2
+t.test(df$contrast)
+
+```
+
 6.c. Make a bar diagram including the mean effect of the two coefficents and the contrast, including error bars (indicating standard error of mean).
+
+```{r}
+
+df_new <- data.frame(df$V1, df$V2, df$contrast)
+
+melt_df <- melt(df_new)
+
+ggplot(melt_df, aes())
+```
+
 Adding a covariate
-7.a. For each partipant, add a covariate that models the effect of time (hint: 1:400). 7.a. Does that improve the group results in term of higher t-values?
+7.a. For each partipant, add a covariate that models the effect of time (hint: 1:400). 
+
+```{r}
+
+```
+
+7.b. Does that improve the group results in term of higher t-values?
+
+
+
 8. Make a bar diagram like in 6.c., but display effects as percent signal change (hint: percent signal change is slope divided by intercept).
 2
 
