@@ -227,7 +227,7 @@ image(full_mask, col=grey(0:100/101))
 
 ```{r}
 
-brain_new <- ifelse((full_mask == 1), brain,0)
+brain_new <- ifelse((full_mask == 1), brain, 0)
 
 image(brain_new, col=grey(1:100/100))
 
