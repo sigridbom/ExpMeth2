@@ -1,0 +1,110 @@
+---
+title: "Assignment 4"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Portfolio assignment 4 - fMRI preprocessing
+
+```{r loading packages}
+
+pacman::p_load(tidyverse, reshape2, Hmisc)
+
+```
+
+```{r port 3}
+##data
+fmri <- as.matrix(read.csv("portfolio_assignment3_aud_fmri_data37.csv", header = FALSE))
+##making it a time-series
+fmri2 <- ts(fmri)
+##design
+fmrides <- as.matrix(read.csv("portfolio_assignment3_aud_fmri_design.csv", header=FALSE))
+##making it a time-series
+fmrides2 <- ts(fmrides)
+```
+
+
+```{r loading data}
+
+data <- read.delim("alignment.txt", header = F, sep = "")
+```
+
+3.a line plot
+3.a. Make a lineplot of the realignment parameters in R.
+
+```{r}
+
+data_melt <- melt(data)
+data_melt$time <- c(1:400)
+
+ggplot(data_melt, aes(data_melt$time, value, colour = variable)) + geom_line()
+```
+
+3.b. How far has the participant moved for each dimension during the experiment (Hint: use “apply()” to run a function across columns)?
+
+```{r}
+
+data_melt %>% group_by(variable) %>% summarise(sum(sqrt(value^2)))
+
+```
+
+
+3.c. Are any of the realignment parameters significantly correlated with the fMRI model (same model as used in exercise 3)?
+
+```{r}
+
+data_mat <- as.matrix(data, ncol = 6)
+
+cor <- rcorr(data_mat, fmrides2, type = "spearman")
+cor
+
+```
+
+Remove linear effects of time from the realignment parameters (hint: 1:400, fit a line and use residuals). 
+3.d. Make a lineplot of the realignment parameters with time removed.
+
+```{r}
+
+df2_melt$time <- c(1:400)
+
+model <- lm(data_mat ~ time)
+summary(model)
+
+res <- model$residuals
+
+df2_melt <- as.matrix(res, ncol = 6)
+
+df2_melt <- melt(df2_melt)
+df2_melt$Var2 <- as.factor(df2_melt$Var2)
+ggplot(df2_melt, aes(Var1, value, colour = Var2)) + geom_line()
+
+```
+
+
+3.e. Make a lineplot including only the first realignment parameter before and after removal.
+
+```{r}
+#var 2 til factor 
+
+
+mat3 <- matrix(c(data[,1], res[,1]), ncol = 2)
+
+
+mat3_melt <- melt(mat3)
+mat3_melt$Var2 <- as.factor(mat3_melt$Var2)
+
+ggplot(mat3_melt, aes(Var1, value, colour = Var2)) + geom_line()
+
+```
+
+3.f. Are the realignment parameters (corrected for effects of time) now correlated with the fMRI model?
+
+```{r}
+
+rcorr(res, fmrides2, type = 'spearman')
+
+```
+
