@@ -15,6 +15,8 @@ pacman::p_load(tidyverse, reshape2, Hmisc)
 
 ```
 
+# Importing the data from portfolio 3, to be used later in this portfolio. 
+
 ```{r port 3}
 ##data
 fmri <- as.matrix(read.csv("portfolio_assignment3_aud_fmri_data37.csv", header = FALSE))
@@ -26,13 +28,14 @@ fmrides <- as.matrix(read.csv("portfolio_assignment3_aud_fmri_design.csv", heade
 fmrides2 <- ts(fmrides)
 ```
 
+# Importing the realigned data
 
 ```{r loading data}
 
 data <- read.delim("alignment.txt", header = F, sep = "")
 ```
 
-3.a line plot
+# Realignment parameters
 3.a. Make a lineplot of the realignment parameters in R.
 
 ```{r}
@@ -61,6 +64,8 @@ data_mat <- as.matrix(data, ncol = 6)
 cor <- rcorr(data_mat, fmrides2, type = "spearman")
 cor
 
+cor_table <- data.frame("Rho_V1" = cor$r[1:6,7], "P-value_V1" = cor$P[1:6,7], "Significant_V1" = ifelse(cor$P[1:6,7] < 0.05, "*", " "),"Rho_V2" = cor$r[1:6,8], "P-value_V2" = cor$P[1:6, 8], "Significant_V2" = ifelse(cor$P[1:6,8]< 0.05, "*", " "))
+cor_table
 ```
 
 Remove linear effects of time from the realignment parameters (hint: 1:400, fit a line and use residuals). 
@@ -68,35 +73,46 @@ Remove linear effects of time from the realignment parameters (hint: 1:400, fit 
 
 ```{r}
 
-df2_melt$time <- c(1:400)
-
+time <- c(1:400)
 model <- lm(data_mat ~ time)
 summary(model)
 
 res <- model$residuals
 
-df2_melt <- as.matrix(res, ncol = 6)
+data_melt <- as.matrix(res, ncol= 6)
 
-df2_melt <- melt(df2_melt)
-df2_melt$Var2 <- as.factor(df2_melt$Var2)
-ggplot(df2_melt, aes(Var1, value, colour = Var2)) + geom_line()
+data_melt <- melt(data_melt)
+data_melt$Var2 <- as.factor(data_melt$Var2)
+ggplot(data_melt, aes(Var1, value, colour = Var2)) + geom_line() + labs(x = "Picture no.", y = "Value", title = "Realignment parameters with time removed")
+
 
 ```
-
 
 3.e. Make a lineplot including only the first realignment parameter before and after removal.
 
 ```{r}
-#var 2 til factor 
-
 
 mat3 <- matrix(c(data[,1], res[,1]), ncol = 2)
-
 
 mat3_melt <- melt(mat3)
 mat3_melt$Var2 <- as.factor(mat3_melt$Var2)
 
-ggplot(mat3_melt, aes(Var1, value, colour = Var2)) + geom_line()
+ggplot(mat3_melt, aes(Var1, value, colour = Var2)) + geom_line() + labs(title = "First realignment parameter with original and time corrected data")
+
+# trying something else
+# creating a new dataframe 
+df_new <- data.frame("Not time corrected" = res[,1], "Time-corrected" = data[,1])
+
+# melting the dataframe (variable/value)
+df_melt <- melt(df_new)
+
+# making the dataframe recognize variable 1 (not time corrected) from variable 2 (time corrected)
+df_melt$variable <- as.factor(df_melt$variable)
+
+df_melt$picture_no <- c(1:400)
+
+#making a plot
+ggplot(df_melt, aes(picture_no, value, colour = variable)) + geom_line() + labs(title = "First realignment parameter with original and time corrected data")
 
 ```
 
@@ -104,7 +120,11 @@ ggplot(mat3_melt, aes(Var1, value, colour = Var2)) + geom_line()
 
 ```{r}
 
-rcorr(res, fmrides2, type = 'spearman')
+cor2 <- rcorr(res, fmrides2, type = 'spearman')
+cor2
+
+cor_table_2 <- data.frame("Rho_V1" = cor2$r[1:6, 7], "P-value_V1" = cor2$P[1:6, 7], "Significant_V1" = ifelse(cor2$P[1:6,7] < 0.05, "*", " "), "Rho_V2" = cor2$r[1:6, 8], "P-value_V2" = cor2$P[1:6, 8], "Significant_V2" = ifelse(cor2$P[1:6, 8] < 0.05, "*", " "))
+cor_table_2
 
 ```
 
