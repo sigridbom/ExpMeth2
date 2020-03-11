@@ -1,0 +1,110 @@
+---
+title: "Portfolio 5"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+pacman::p_load(tidyverse, reshape2, pastecs, WRS2)
+```
+
+```{r importing data}
+
+data <- read.delim("alignment.txt", header = F, sep = "")
+
+```
+
+```{r new dataset - stories}
+
+scan_no <- c(1:400)
+
+onset_story1 <- c(3, 117, 203, 278, 375, 442, 513, 616, 723, 807, 910, 1003, 1093, 1186, 1282) #in seconds
+
+onset_story2 <- c(50, 157, 242, 326, 414, 471, 555, 670, 768, 873, 944, 1054, 1149, 1242, 1316)
+
+onset_ratings <- c(39, 106, 146, 191, 231, 267, 315, 364, 403, 431, 460, 502, 544, 605, 659, 711, 757, 796, 862, 899, 933, 992, 1042, 1082, 1138, 1175, 1231, 1271, 1305, 1348)
+
+duration_story1 <- c(35, 27, 27, 36, 26, 16, 29, 42, 33, 54, 22, 38, 43, 43, 21)
+
+duration_story2 <- c(55, 33, 23, 37, 16, 30, 48, 40, 26, 24, 46, 27, 25, 27, 30)
+
+duration_ratings <- rep(10,10)
+
+ratings_story1 <- c(7,4,4,5,3,1,6,2,1,4,2,3,2,4,1)
+
+ratings_story2 <- c(8,2,3,2,5,7,7,3,3,2,3,3,2,4,3)
+
+df <- data.frame(onset_story1, onset_story2, onset_ratings, duration_story1, duration_story2, duration_ratings, ratings_story1, ratings_story2)
+
+df2 <- data.frame(duration_story1, duration_story2)
+df2_melt <- melt(df2)
+
+df2_melt$variable <- as.factor(df2_melt$variable)
+
+```
+
+### Task 1 - Checking input using R
+
+# Test the following hypotheses:
+# 1.a. There was a signifiant difference between the durations of the two story types. 
+
+First, I check normality.
+
+```{r checking assumptions + t-test}
+
+
+round(pastecs::stat.desc(cbind(df$duration_story1, df$duration_story2), basic = F, norm = T), digits = 2)
+
+# or like this??
+round(pastecs::stat.desc(df2_melt$value, basic = F, norm = T), digits = 2)
+
+# duration of story 1 could be normally distributed, whereas story 2 is significantly different from a normal distribution.
+
+qqplot_dura_story1 <- ggplot(df, aes(sample = duration_story1))
+qqplot_dura_story1 + stat_qq() + stat_qq_line(colour = "red") + ggtitle("ff")
+
+qqplot_dura_story2 <- ggplot(df, aes(sample = duration_story2))
+qqplot_dura_story2 + stat_qq() + stat_qq_line(colour = "red") + ggtitle("ff")
+
+#doesn't look to shabby
+
+# continuing with both a parametric and a non-parametric t-test
+
+t.test(value ~ variable, df2_melt)
+# very high p-value, p = 0.93
+
+#non-parametric t-test
+WRS2::yuen(value ~ variable, df2_melt)
+#very high p-value 
+
+```
+
+When conducting a non-parametric t-test, there was found no significant difference between the duration of the two stories, t(15.93) = 0.49, p > .05 (p = 0.63).
+
+# 1.b. There was a significant difference between the ratings of the two story types.
+
+
+```{r}
+
+df3 <- data.frame(ratings_story1, ratings_story2)
+df3 <- melt(df3)
+
+df3$variable <- as.factor(df3$variable)
+
+#checking normality
+
+round(pastecs::stat.desc(cbind(df$ratings_story1, df$ratings_story2), basic = F, norm = T), digits = 2)
+#not normally distributed
+# or like this
+round(pastecs::stat.desc(df3$value, basic = F, norm = T), digits = 2)
+# still not normal
+# conducting non-parametric t-test
+
+WRS2::yuen(value ~ variable, df3)
+
+
+```
+When conducting a non-parametric t-test there was found no significant difference betwen the ratings of the two stories, t(15.39) = 0.17, p > .05 (p = 0.87). 
