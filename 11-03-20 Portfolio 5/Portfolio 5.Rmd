@@ -64,10 +64,10 @@ round(pastecs::stat.desc(df2_melt$value, basic = F, norm = T), digits = 2)
 # duration of story 1 could be normally distributed, whereas story 2 is significantly different from a normal distribution.
 
 qqplot_dura_story1 <- ggplot(df, aes(sample = duration_story1))
-qqplot_dura_story1 + stat_qq() + stat_qq_line(colour = "red") + ggtitle("ff")
+qqplot_dura_story1 + stat_qq() + stat_qq_line(colour = "red") + ggtitle("Duration of story 1 qq-plot")
 
 qqplot_dura_story2 <- ggplot(df, aes(sample = duration_story2))
-qqplot_dura_story2 + stat_qq() + stat_qq_line(colour = "red") + ggtitle("ff")
+qqplot_dura_story2 + stat_qq() + stat_qq_line(colour = "red") + ggtitle("Duration of story 2 qq-plot")
 
 #doesn't look to shabby
 
@@ -84,8 +84,7 @@ WRS2::yuen(value ~ variable, df2_melt)
 
 When conducting a non-parametric t-test, there was found no significant difference between the duration of the two stories, t(15.93) = 0.49, p > .05 (p = 0.63).
 
-# 1.b. There was a significant difference between the ratings of the two story types.
-
+# 1.b. Hypothesis: There was a significant difference between the ratings of the two story types.
 
 ```{r}
 
@@ -101,10 +100,18 @@ round(pastecs::stat.desc(cbind(df$ratings_story1, df$ratings_story2), basic = F,
 # or like this
 round(pastecs::stat.desc(df3$value, basic = F, norm = T), digits = 2)
 # still not normal
-# conducting non-parametric t-test
 
+qqplot_rat_story1 <- ggplot(df, aes(sample = ratings_story1))
+qqplot_rat_story1 + stat_qq() + stat_qq_line(colour = "red") + ggtitle("Ratings for story 1 qq-plot")
+
+qqplot_rat_story2 <- ggplot(df, aes(sample = ratings_story2))
+qqplot_rat_story2 + stat_qq() + stat_qq_line(colour = "red") + ggtitle("Ratings for story 2 qq-plot")
+# looks pretty bad
+
+# conducting non-parametric t-test
 WRS2::yuen(value ~ variable, df3)
 
 
 ```
 When conducting a non-parametric t-test there was found no significant difference betwen the ratings of the two stories, t(15.39) = 0.17, p > .05 (p = 0.87). 
+
