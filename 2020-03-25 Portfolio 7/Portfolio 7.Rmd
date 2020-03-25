@@ -12,9 +12,20 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r loading packages}
-pacman::p_load(tidyverse, reshape2)
+pacman::p_load(tidyverse, reshape2, lmerTest, car, pastecs, nlme)
 
 ```
+
+# Assignment A tasks
+## 1. Understanding the experiment
+### 1.a.Comprehension question. Please explain which factor was between-participants and which were within- participants and why.
+
+*The ‘color frequency’ factor is a between-participants variable because one group received a higher number of blue stimuli, whereas the other received a higher number of yellow stimuli.*
+
+*The ‘emotion’ factor is a within-participant variable (repeated measures), because all the participants received the same number of neural and fearful faces, respectively.*
+
+### 1.b. What was the age range of the participants?
+*The participants were between the ages of 19 and 27 years old.*
 
 ## 2. Data exploring and preparation
 
@@ -35,21 +46,167 @@ face_exp$freq <- as.factor(face_exp$freq)
 
 ```
 
-2.a: make a box-plot of the data with RT on the y-axis and emotional condition on the x-axis. Make a box-plot for each of the color conditions by using “fill”. Use facet_wrap() to make two seper- ate graphs for each frequency group. Give the boxes colors that mathces the stimuli, eg. use " + scale_fill_manual(values=c(“yellow”,“blue”,“yellow”,“blue”,“yellow”,“blue”,“yellow”,“blue”))" .
+### 2.a: make a box-plot of the data with RT on the y-axis and emotional condition on the x-axis. Make a box-plot for each of the color conditions by using “fill”. Use facet_wrap() to make two seperate graphs for each frequency group. Give the boxes colors that mathces the stimuli, eg. use " + scale_fill_manual(values=c(“yellow”,“blue”,“yellow”,“blue”,“yellow”,“blue”,“yellow”,“blue”))" .
 
-```{r}
+```{r 2.a}
+# create the boxplots
+boxplot <- ggplot(face_exp, aes(cond_emo,rt, fill = cond_blue))
+boxplot + geom_boxplot() + facet_wrap(face_exp$freq) + scale_fill_manual(values = c("yellow", "blue")) + labs(x = "Emotional condition, 0 = neutral, 1 = fearful", y = "Reaction time (seconds)", title = "Boxplots: reaction time according to emotional condition, color and frequency group")
 
+```
+### 2.b: Comprehension question. Explain why this plot shows that there is something wrong with the data.
 
+*There seems to be a lower limit of RT in yellow frequency group, since the whiskers of the four boxplots in this group have the same length. Besides from that, the boxplots in the blue frequency group also have a problem, because the whiskers seem to extend to datapoints with a RT very, very close to 0 seconds, which is probably due to error.*
 
+### 2.c.: Make a subset of the data, including only correct responses.
+
+```{r 2.c}
+
+face_exp_cor <- subset(face_exp, face_exp$correct_resp == 1)
+
+```
+
+### 2.d.: Make another boxplot similar to that in 2.a. Did it solve the observed problem?
+
+```{r 2.d}
+# create the boxplots
+boxplot2 <- ggplot(face_exp_cor, aes(cond_emo,rt, fill = cond_blue))
+boxplot2 + geom_boxplot() + facet_wrap(face_exp_cor$freq) + scale_fill_manual(values = c("yellow", "blue")) + labs(x = "Emotional condition, 0 = neutral, 1 = fearful", y = "Reaction time (seconds)", title = "Boxplots: reaction time according to emotional condition, color and frequency group")
+```
+
+*Now the data points with the lowest RT look more reasonible, as in the don't start within the first milisecond.*
+
+### 2.e.: Use the by() function and stat.desc (in library(pastecs)) to get descriptive measures for the different conditions (e.g. see Field’s book chapter 5.5.3.2.). Try to investigate the three hypotheses based on the descriptive statistics - would you expect any of the statistical analyses to be significant based on the descriptive stats?
+
+```{r 2.e}
+
+#looking at the descriptive stats for H1
+by(face_exp_cor$rt, face_exp_cor$cond_blue, stat.desc, basic = F, norm = T)
+
+#looking at the descriptive stats for H2
+by(face_exp_cor$rt, face_exp_cor$cond_emo, stat.desc, basic = F, norm = T)
+
+#looking at the descriptive stats for H3
+by(face_exp_cor$rt, face_exp_cor$freq, stat.desc, basic = F, norm = T)
+
+by(rexam$exam, rexam$uni, stat.desc, basic = FALSE, norm = TRUE)
+
+```
+*H1: The index finger (blue) trials will lead to a shorter response time than middle finger (yellow) trials.*
+Looks like the means of the two groups are practically the same, very little difference. I would not expect this to be significant.
+
+*H2: Fearful faces will yield a shorter response time than neutral.*
+Again, there is a very little difference in the means at around 0.0063 seconds, which is not alot. I would not expect this to be significant. 
+
+*H3: Infrequent stimuli will yield longer responses time than frequent. This should surface as an interaction between color and frequency group.*
+Here the difference between means is a little bit bigger, but it is probably still not significant. 
+
+### 2.f.: Explore if the RT data is normally distributed using a qq-plot (e.g. qqnorm()).
+
+```{r 2.f}
+qqplot <- ggplot(face_exp_cor, aes(sample = rt)) + stat_qq() + stat_qq_line(colour = "red")
+qqplot + ggtitle("Reaction time")
+
+```
+
+### 2.g.: log-transform the RT data.
+
+```{r 2.g}
+#face_exp_cor$rt_z = (rt - mean(rt))/sd(rt)
+
+face_exp_cor$rt_log <- log(face_exp_cor$rt)
+
+```
+
+### 2.h.: Use a qq-plot to explore if the transformed data appear more normal than the untransformed.
+
+```{r 2.h}
+qqplot2 <- ggplot(face_exp_cor, aes(sample = rt_log)) + stat_qq() + stat_qq_line(colour = "red")
+qqplot2 + ggtitle("Log transformed reaction time")
+```
+I would say it looks better, but still not perfect. 
+
+### 2.i.: Make a plot that explores the response times for participants, individually, using a box-plot. Does anybody stick out as unusual?
+
+```{r 2.i}
+# creating a boxplot
+
+boxplot3 <- ggplot(face_exp_cor, aes(ID, rt, fill = ID))
+boxplot3 + geom_boxplot() + labs(x = "Subject ID", y = "Reaction time (seconds)", title = "Individual boxplots for reaction time")
+```
+
+Some people have quite high reaction times, it would probably be a good idea to remove outliers. 
+
+## 3. Data analysis
+
+### 3.a Make mixed effects model where you predict reaction time using the three factors as fixed effects, and include random intercepts for each participant (use “ID” from the log). Include 2-way and 3-way interactions as well. To do this use lme() from the “nlme” package, and use maximum-likelihood as estimation method( method = “ML”).
+
+### 3.b.: Report the t-statistics using summary().
+
+```{r 3.a + 3.b}
+
+m1 <- lme(rt ~ cond_blue + cond_emo + freq + cond_blue:cond_emo + cond_blue:freq + cond_emo:freq, random = ~1|ID, data = face_exp_cor, method = "ML")
+
+m1_sum <- summary(m1)
+m1_sum
+
+t_stats <- data.frame("t-value"=m1_sum$tTable[,4], "p-value" = m1_sum$tTable[,5], "significant" = ifelse(m1_sum$tTable[,5] < 0.05,"*",""))
+t_stats
+
+```
+
+### 3.c.: Report the F-statistics using anova() and type=‘sequential’, which gives you type=‘I’ analysis.
+
+```{r 3.c}
+m1_aov <- anova(m1, type = "sequential")
+m1_aov
+f_stats <- data.frame("F-value" = m1_aov$`F-value`, "p-value" = m1_aov$`p-value`,"significant" = ifelse(m1_aov$`p-value` < 0.05, "*", ""))
+f_stats
 
 ```
 
 
+### 3.d.: Report the F-statistics using anova() and type=‘marginal’. Why might there be differences between results from 3.c and 3.d?
 
-2.b: Comprehension question. Explain why this plot shows that there is something wrong with the data. 2.c.: Make a subset of the data, including only correct responses.
-2.d.: Make another boxplot similar to that in 2.a. Did it solve the observed problem?
-2.e.: Use the by() function and stat.desc (in library(pastecs)) to get descriptive measures for the different conditions (e.g. see Field’s book chapter 5.5.3.2.). Try to investigate the three hypotheses based on the descriptive statistics - would you expect any of the statistical analyses to be significant based on the descriptive stats?
-2.f.: Explore if the RT data is normally distributed using a qq-plot (e.g. qqnorm()).
-2.g.: log-transform the RT data.
-2.h.: Use a qq-plot to explore if the transformed data appear more normal than the untransformed.
-2.i.: Make a plot that explores the response times for participants, individually, using a box-plot. Does anybody stick out as unusual?
+```{r 3.d}
+m1_aov2 <- anova(m1, type = "marginal")
+m1_aov2
+f_stats <- data.frame("F-value" = m1_aov2$`F-value`, "p-value" = m1_aov2$`p-value`,"significant" = ifelse(m1_aov2$`p-value` < 0.05, "*", ""))
+f_stats
+```
+When using 'sequential' we get type I sum of squares.
+When using 'marginal' we get type III sum of squares.
+
+I guess the type III sums of squares is the most appropriate in this case, because type I requires the variables to be independent (which our are not, since it is a mixed model), plus the order of the predictors matter, which we don't want in this case. 
+
+###3.e.: Make a new model including a random slope from trial number (‘no’ in the log-file). Repeat 3.b. What does the inclusion of such a random slope model? Did it change the results?
+
+```{r}
+
+m2 <- lme(rt ~ cond_blue + cond_emo + freq + cond_blue:cond_emo + cond_blue:freq + cond_emo:freq, random = ~no|ID, data = face_exp_cor, method = "ML")
+
+m2_sum <- summary(m2)
+m2_sum
+t_stats <- data.frame("t-value"=m2_sum$tTable[,4], "p-value" = m2_sum$tTable[,5], "significant" = ifelse(m2_sum$tTable[,5] < 0.05,"*",""))
+t_stats
+
+```
+It didn't change the results?
+
+### 3.f.: Make a model comparison of model 3.a and 3.e using anova(). Did the inclusion of a random slope significantly improve the model?
+
+```{r}
+anova(m1,m2)
+```
+The inclusion of a random slope did significantly improve the model, l.ratio = 22.04, p<.0001.
+
+### 3.g.: Response times are correlated in time which goes against the assumption of independence. It might therefore be an idea to model this by including a so-called auto-regressive component in the model (e.g. this is default in SPM analyses of fMRI-data). In lme(), this is done by adding the following to the model specification: “cor=corAR1(,form=~1|ID)”. Make a new model comparison. Does that have an effect?
+
+```{r}
+m1_new <- lme(rt ~ cond_blue + cond_emo + freq + cond_blue:cond_emo + cond_blue:freq + cond_emo:freq, random = ~1|ID, data = face_exp_cor, method = "ML",cor=corAR1(, form=~1|ID))
+
+m2_new <- lme(rt ~ cond_blue + cond_emo + freq + cond_blue:cond_emo + cond_blue:freq + cond_emo:freq, random = ~no|ID, data = face_exp_cor, method = "ML", cor=corAR1(, form=~1|ID))
+
+anova(m1_new, m2_new)
+```
+Well, the l.ratio is lower, but the log-likelihood of the new model 2 is higher, than the log-likelihood of the original model 2. stil signifant, but now at p<.01 (higher p-value than before).
