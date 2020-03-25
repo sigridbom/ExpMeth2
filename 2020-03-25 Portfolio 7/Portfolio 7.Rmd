@@ -1,0 +1,55 @@
+---
+title: "Portfolio 7"
+author: "Anders, Gustav H, Morten & Sigrid"
+date: "3/25/2020"
+output: html_document
+---
+
+# Portfolio 7
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r loading packages}
+pacman::p_load(tidyverse, reshape2)
+
+```
+
+## 2. Data exploring and preparation
+
+```{r loading data}
+
+face_exp_2016 <- read.csv("face_exp_data_all_160310.csv", sep =";") 
+                          
+face_exp_2017 <- read.csv("face_exp_all_logs_2017.csv", sep =";") 
+
+#Binding the two datasets together
+face_exp <- rbind(face_exp_2016,face_exp_2017)
+
+#conditions are coded in the "cond_blue", "cond_emo" and "freq" variables
+# make the conditions to factors
+face_exp$cond_blue <- as.factor(face_exp$cond_blue)
+face_exp$cond_emo <- as.factor(face_exp$cond_emo)
+face_exp$freq <- as.factor(face_exp$freq)
+
+```
+
+2.a: make a box-plot of the data with RT on the y-axis and emotional condition on the x-axis. Make a box-plot for each of the color conditions by using “fill”. Use facet_wrap() to make two seper- ate graphs for each frequency group. Give the boxes colors that mathces the stimuli, eg. use " + scale_fill_manual(values=c(“yellow”,“blue”,“yellow”,“blue”,“yellow”,“blue”,“yellow”,“blue”))" .
+
+```{r}
+
+
+
+
+```
+
+
+
+2.b: Comprehension question. Explain why this plot shows that there is something wrong with the data. 2.c.: Make a subset of the data, including only correct responses.
+2.d.: Make another boxplot similar to that in 2.a. Did it solve the observed problem?
+2.e.: Use the by() function and stat.desc (in library(pastecs)) to get descriptive measures for the different conditions (e.g. see Field’s book chapter 5.5.3.2.). Try to investigate the three hypotheses based on the descriptive statistics - would you expect any of the statistical analyses to be significant based on the descriptive stats?
+2.f.: Explore if the RT data is normally distributed using a qq-plot (e.g. qqnorm()).
+2.g.: log-transform the RT data.
+2.h.: Use a qq-plot to explore if the transformed data appear more normal than the untransformed.
+2.i.: Make a plot that explores the response times for participants, individually, using a box-plot. Does anybody stick out as unusual?
