@@ -209,4 +209,4 @@ m2_new <- lme(rt ~ cond_blue + cond_emo + freq + cond_blue:cond_emo + cond_blue:
 
 anova(m1_new, m2_new)
 ```
-Well, the l.ratio is lower, but the log-likelihood of the new model 2 is higher, than the log-likelihood of the original model 2. stil signifant, but now at p<.01 (higher p-value than before).
+Well, the l.ratio is lower, but the log-likelihood of both the new model 1 and the new model 2 is higher, than the log-likelihood of the original model 1 and model 2. The new model 2 is stil signifant, but now at p<.01 (higher p-value than before).
