@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r loading packages}
-pacman::p_load(tidyverse, reshape2, lmerTest, car, pastecs, nlme)
+pacman::p_load(tidyverse, reshape2, lmerTest, car, pastecs, nlme, MuMin)
 
 ```
 
@@ -25,6 +25,13 @@ pacman::p_load(tidyverse, reshape2, lmerTest, car, pastecs, nlme)
 *The ‘emotion’ factor is a within-participant variable (repeated measures), because all the participants received the same number of neural and fearful faces, respectively.*
 
 ### 1.b. What was the age range of the participants?
+
+```{r}
+hist(face_exp$age)
+min(face_exp$age)
+max(face_exp$age)
+```
+
 *The participants were between the ages of 19 and 27 years old.*
 
 ## 2. Data exploring and preparation
@@ -74,7 +81,7 @@ boxplot2 <- ggplot(face_exp_cor, aes(cond_emo,rt, fill = cond_blue))
 boxplot2 + geom_boxplot() + facet_wrap(face_exp_cor$freq) + scale_fill_manual(values = c("yellow", "blue")) + labs(x = "Emotional condition, 0 = neutral, 1 = fearful", y = "Reaction time (seconds)", title = "Boxplots: reaction time according to emotional condition, color and frequency group")
 ```
 
-*Now the data points with the lowest RT look more reasonible, as in the don't start within the first milisecond.*
+*Now the data points with the lowest RT look more reasonible, as in they don't start within the first milisecond.*
 
 ### 2.e.: Use the by() function and stat.desc (in library(pastecs)) to get descriptive measures for the different conditions (e.g. see Field’s book chapter 5.5.3.2.). Try to investigate the three hypotheses based on the descriptive statistics - would you expect any of the statistical analyses to be significant based on the descriptive stats?
 
@@ -89,7 +96,23 @@ by(face_exp_cor$rt, face_exp_cor$cond_emo, stat.desc, basic = F, norm = T)
 #looking at the descriptive stats for H3
 by(face_exp_cor$rt, face_exp_cor$freq, stat.desc, basic = F, norm = T)
 
-by(rexam$exam, rexam$uni, stat.desc, basic = FALSE, norm = TRUE)
+
+by(face_exp_cor$rt, list(face_exp_cor$freq, face_exp_cor$cond_blue), stat.desc, basic = F, norm = T)
+
+#one-liner - too much
+by(face_exp_cor$rt, list(face_exp_cor$cond_blue, face_exp_cor$cond_emo, face_exp_cor$freq), stat.desc, basic = F, norm = T)
+
+#subsetting group y
+face_exp_y <- subset(face_exp, face_exp$freq == 'y')
+# in group y which color has longest rt?
+by(data = face_exp_y$rt, face_exp_y$cond_blue, stat.desc, basic = FALSE, norm = TRUE)
+# maybe a difference
+
+#subsetting group b
+face_exp_b <- subset(face_exp, face_exp$freq == 'b')
+#in group b which color has longest rt?
+by(data = face_exp_b$rt, face_exp_b$cond_blue, stat.desc, basic = FALSE, norm = TRUE)
+# difference for sure homie
 
 ```
 *H1: The index finger (blue) trials will lead to a shorter response time than middle finger (yellow) trials.*
@@ -145,13 +168,17 @@ Some people have quite high reaction times, it would probably be a good idea to 
 
 ```{r 3.a + 3.b}
 
-m1 <- lme(rt ~ cond_blue + cond_emo + freq + cond_blue:cond_emo + cond_blue:freq + cond_emo:freq, random = ~1|ID, data = face_exp_cor, method = "ML")
+m0 <- lme(rt ~ 1, random = ~1|ID, data = face_exp_cor, method = 'ML')
+
+m1 <- lme(rt ~ cond_blue + cond_emo + freq + cond_blue:cond_emo + cond_blue:freq + cond_emo:freq + cond_emo:freq:cond_blue, random = ~1|ID, data = face_exp_cor, method = "ML")
 
 m1_sum <- summary(m1)
 m1_sum
 
 t_stats <- data.frame("t-value"=m1_sum$tTable[,4], "p-value" = m1_sum$tTable[,5], "significant" = ifelse(m1_sum$tTable[,5] < 0.05,"*",""))
 t_stats
+
+anova(m0,m1)
 
 ```
 
@@ -160,7 +187,8 @@ t_stats
 ```{r 3.c}
 m1_aov <- anova(m1, type = "sequential")
 m1_aov
-f_stats <- data.frame("F-value" = m1_aov$`F-value`, "p-value" = m1_aov$`p-value`,"significant" = ifelse(m1_aov$`p-value` < 0.05, "*", ""))
+
+f_stats <- data.frame(m1_aov, "significant" = ifelse(m1_aov$`p-value` < 0.05, "*", ""))
 f_stats
 
 ```
@@ -183,22 +211,31 @@ I guess the type III sums of squares is the most appropriate in this case, becau
 
 ```{r}
 
-m2 <- lme(rt ~ cond_blue + cond_emo + freq + cond_blue:cond_emo + cond_blue:freq + cond_emo:freq, random = ~no|ID, data = face_exp_cor, method = "ML")
+m2 <- lme(rt ~ cond_blue + cond_emo + freq + cond_blue:cond_emo + cond_blue:freq + cond_emo:freq + cond_emo:freq:cond_blue, random = ~no|ID, data = face_exp_cor, method = "ML")
 
 m2_sum <- summary(m2)
 m2_sum
-t_stats <- data.frame("t-value"=m2_sum$tTable[,4], "p-value" = m2_sum$tTable[,5], "significant" = ifelse(m2_sum$tTable[,5] < 0.05,"*",""))
-t_stats
+
+
+#t_stats <- data.frame("t-value"=m2_sum$tTable[,4], "p-value" = m2_sum$tTable[,5], "significant" = ifelse(m2_sum$tTable[,5] < 0.05,"*",""))
+
+#t_stats <- data.frame(m2_sum, "significant" = ifelse(m2_sum$tTable[,5] < 0.05,"*",""))
+#t_stats
+
+m1_sum
+m2_sum
+
+MuMIn::r.squaredGLMM(m1)
 
 ```
-It didn't change the results?
+It changes the results marginally.. 
 
 ### 3.f.: Make a model comparison of model 3.a and 3.e using anova(). Did the inclusion of a random slope significantly improve the model?
 
 ```{r}
-anova(m1,m2)
+anova(m0, m1,m2)
 ```
-The inclusion of a random slope did significantly improve the model, l.ratio = 22.04, p<.0001.
+The inclusion of a random slope did significantly improve the model, l.ratio = 22.25, p<.0001.
 
 ### 3.g.: Response times are correlated in time which goes against the assumption of independence. It might therefore be an idea to model this by including a so-called auto-regressive component in the model (e.g. this is default in SPM analyses of fMRI-data). In lme(), this is done by adding the following to the model specification: “cor=corAR1(,form=~1|ID)”. Make a new model comparison. Does that have an effect?
 
@@ -210,3 +247,10 @@ m2_new <- lme(rt ~ cond_blue + cond_emo + freq + cond_blue:cond_emo + cond_blue:
 anova(m1_new, m2_new)
 ```
 Well, the l.ratio is lower, but the log-likelihood of both the new model 1 and the new model 2 is higher, than the log-likelihood of the original model 1 and model 2. The new model 2 is stil signifant, but now at p<.01 (higher p-value than before).
+
+
+```{r}
+summary(m1)
+summary(m2)
+```
+
