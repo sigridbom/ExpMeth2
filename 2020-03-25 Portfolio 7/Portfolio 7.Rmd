@@ -2,7 +2,9 @@
 title: "Portfolio 7"
 author: "Anders, Gustav H, Morten & Sigrid"
 date: "3/25/2020"
-output: html_document
+output:
+  word_document: default
+  html_document: default
 ---
 
 # Portfolio 7
@@ -13,6 +15,23 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r loading packages}
 pacman::p_load(tidyverse, reshape2, lmerTest, car, pastecs, nlme, MuMin)
+
+```
+
+```{r loading data}
+
+face_exp_2016 <- read.csv("face_exp_data_all_160310.csv", sep =";") 
+                          
+face_exp_2017 <- read.csv("face_exp_all_logs_2017.csv", sep =";") 
+
+#Binding the two datasets together
+face_exp <- rbind(face_exp_2016,face_exp_2017)
+
+#conditions are coded in the "cond_blue", "cond_emo" and "freq" variables
+# make the conditions to factors
+face_exp$cond_blue <- as.factor(face_exp$cond_blue)
+face_exp$cond_emo <- as.factor(face_exp$cond_emo)
+face_exp$freq <- as.factor(face_exp$freq)
 
 ```
 
@@ -35,23 +54,6 @@ max(face_exp$age)
 *The participants were between the ages of 19 and 27 years old.*
 
 ## 2. Data exploring and preparation
-
-```{r loading data}
-
-face_exp_2016 <- read.csv("face_exp_data_all_160310.csv", sep =";") 
-                          
-face_exp_2017 <- read.csv("face_exp_all_logs_2017.csv", sep =";") 
-
-#Binding the two datasets together
-face_exp <- rbind(face_exp_2016,face_exp_2017)
-
-#conditions are coded in the "cond_blue", "cond_emo" and "freq" variables
-# make the conditions to factors
-face_exp$cond_blue <- as.factor(face_exp$cond_blue)
-face_exp$cond_emo <- as.factor(face_exp$cond_emo)
-face_exp$freq <- as.factor(face_exp$freq)
-
-```
 
 ### 2.a: make a box-plot of the data with RT on the y-axis and emotional condition on the x-axis. Make a box-plot for each of the color conditions by using “fill”. Use facet_wrap() to make two seperate graphs for each frequency group. Give the boxes colors that mathces the stimuli, eg. use " + scale_fill_manual(values=c(“yellow”,“blue”,“yellow”,“blue”,“yellow”,“blue”,“yellow”,“blue”))" .
 
@@ -170,7 +172,7 @@ Some people have quite high reaction times, it would probably be a good idea to 
 
 m0 <- lme(rt ~ 1, random = ~1|ID, data = face_exp_cor, method = 'ML')
 
-m1 <- lme(rt ~ cond_blue + cond_emo + freq + cond_blue:cond_emo + cond_blue:freq + cond_emo:freq + cond_emo:freq:cond_blue, random = ~1|ID, data = face_exp_cor, method = "ML")
+m1 <- lme(rt ~ cond_blue + cond_emo + freq + cond_blue*cond_emo*freq, random = ~1|ID, data = face_exp_cor, method = "ML", na.action = na.omit)
 
 m1_sum <- summary(m1)
 m1_sum
@@ -225,7 +227,7 @@ m2_sum
 m1_sum
 m2_sum
 
-MuMIn::r.squaredGLMM(m1)
+#MuMIn::r.squaredGLMM(m1)
 
 ```
 It changes the results marginally.. 
@@ -234,6 +236,8 @@ It changes the results marginally..
 
 ```{r}
 anova(m0, m1,m2)
+
+anova(m1, m2)
 ```
 The inclusion of a random slope did significantly improve the model, l.ratio = 22.25, p<.0001.
 
@@ -245,6 +249,16 @@ m1_new <- lme(rt ~ cond_blue + cond_emo + freq + cond_blue:cond_emo + cond_blue:
 m2_new <- lme(rt ~ cond_blue + cond_emo + freq + cond_blue:cond_emo + cond_blue:freq + cond_emo:freq, random = ~no|ID, data = face_exp_cor, method = "ML", cor=corAR1(, form=~1|ID))
 
 anova(m1_new, m2_new)
+
+
+m3 <- lme(rt ~ cond_blue + cond_emo + freq + cond_blue*cond_emo*freq, random = ~no|ID, data = face_exp_cor, method = "ML",na.action = na.omit, cor=corAR1(,form=~1|ID))
+
+summary(m3)
+
+anova(m1,m3, type = "marginal")
+
+anova(m1, m3, type = 'marginal')
+
 ```
 Well, the l.ratio is lower, but the log-likelihood of both the new model 1 and the new model 2 is higher, than the log-likelihood of the original model 1 and model 2. The new model 2 is stil signifant, but now at p<.01 (higher p-value than before).
 
