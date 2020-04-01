@@ -237,7 +237,7 @@ It changes the results marginally..
 ```{r}
 anova(m0, m1,m2)
 
-anova(m1, m2)
+anova(m1, m2, type = 'marginal')
 ```
 The inclusion of a random slope did significantly improve the model, l.ratio = 22.25, p<.0001.
 
@@ -267,4 +267,83 @@ Well, the l.ratio is lower, but the log-likelihood of both the new model 1 and t
 summary(m1)
 summary(m2)
 ```
+
+
+# Task 5
+# 5. Interpretation task
+## 5.a. Find the data on Blackboard, load it and report figure and analysis using the code below.
+## 5.b. Report and discuss the findings. What do they mean? How do they relate to the hypotheses?
+
+```{r}
+#Load data
+trypt_long<-read.csv(file='trypt_long.csv',header=TRUE,sep=",") 
+trypt_long$ID<-as.factor(trypt_long$ID) 
+trypt_long$time<-as.factor(trypt_long$time)
+
+#use ggline to make nice line plot. Install ggpubr, if you haven't got it
+pacman::p_load(ggpubr)
+ggline(trypt_long, x = "time", y = "mood",col='Group',add = c("mean_se", "dodge"), palette = "jco")
+library(lmerTest)
+
+#Relevel to make the reference group "loaded" trypt_long$Group<-relevel(trypt_long$Group,'loaded') #Relevel to make the reference time "7.05"
+trypt_long$time<-relevel(trypt_long$time,'7.05')
+
+#Make mixed effects model with Group and time as fixed effects and ID as random effect 
+trypt_model<-lmerTest::lmer(mood~Group*time+(1|ID), data = trypt_long)
+
+#Get summary statistics
+trypt_res<-summary(trypt_model)
+
+#Apply Bonferroni correction for multiple comparisons to p-values (9 tests)
+# and round a bit (5 decimals) 
+trypt_res$coefficients2 <- matrix(round(c(trypt_res$coefficients,trypt_res$coefficients[,5]*9), digits=5),ncol=6) 
+          
+colnames(trypt_res$coefficients2)<-c(colnames(trypt_res$coefficients),'p(bonf)')
+
+rownames(trypt_res$coefficients2)<-c(rownames(trypt_res$coefficients)) #Show us what you've got
+
+trypt_res$coefficients2
+#Use library(emmeans) to get more comprehensible pairwise interactions (uncorrected for mu
+pacman::p_load(emmeans)
+lsm = emmeans(trypt_model, ~Group*time) 
+contrast(lsm, interaction = "pairwise")
+
+ggline(trypt_long, x = "time", y = "mood",col='Group',add = c("mean_se", "dodge"), palette = "jco")
+
+
+```
+
+
+
+
+```{r}
+
+
+#Relevel to make the reference group "loaded"
+trypt_long$Group<-relevel(trypt_long$Group,'loaded')
+#Relevel to make the reference time "7.05"
+trypt_long$time<-relevel(trypt_long$time,'7.05')
+#Make mixed effects model with Group and time as fixed effects and ID as random effect
+trypt_model<-lmerTest::lmer(mood~Group*time+(1|ID), data = trypt_long)
+#Get summary statistics
+trypt_res<-summary(trypt_model)
+trypt_res
+#Apply Bonferroni correction for multiple comparisons to p-values (9 tests)
+# and round a bit (5 decimals)
+trypt_res$coefficients2<-matrix(round(c(trypt_res$coefficients,trypt_res$coefficients[,5]*9),
+digits=5),ncol=6)
+#Add names to the new results matrix
+colnames(trypt_res$coefficients2)<-c(colnames(trypt_res$coefficients),'p(bonf)')
+rownames(trypt_res$coefficients2)<-c(rownames(trypt_res$coefficients))
+#Show us what you've got
+trypt_res$coefficients2
+
+
+by(trypt_long$mood, list(trypt_long$time, trypt_long$Group), stat.desc, basic = F, norm = T)
+
+trypt_model<-lmerTest::lmer(mood~Group*time+(1|ID), data = trypt_long)
+summary(trypt_model)
+```
+
+
 
