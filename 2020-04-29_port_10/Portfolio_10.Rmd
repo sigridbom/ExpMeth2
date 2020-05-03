@@ -6,28 +6,59 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-pacman::p_load(tidyverse)
+pacman::p_load(tidyverse, GPArotatio, mvtnorm, polycor, psych,corpcor,GPArotation,psych,pastecs)
 
 df <- read_csv("emp_all_all.csv")
 ?read_csv()
 ```
 
-## R Markdown
+# Portfolio 10
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+## inspecting the data - covariance matrix
+```{r}
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+#correlation
+df_cor <- cor(df,use='complete.obs')
+df_cor <-round(df_cor,3)
+df_cor
+corrgram(df_cor, col.regions =  colorRampPalette(c("dodgerblue4", 'dodgerblue','white', 'gold',"firebrick4")),cor.method='pearson')
 
-```{r cars}
-summary(cars)
+# ANOTHER WAY OF DOING THE SAME THING:
+
+# numeric covariates
+cov(df)
+# figure corrgram
+library(corrgram)
+corrgram(df, col.regions =  colorRampPalette(c("dodgerblue4", 'dodgerblue','white', 'gold',"firebrick4")),cor.method='pearson')
+
+# determinant - very small 
+det(cor(df))
+
+####### PCA analysis
+
+df_pca <-princomp(df[,1:2])
+matplot(df_pca$scores[,1],df_pca$scores[,2],type='p',pch=16, col=1,xlab = 'score comp1', ylab = 'score comp2')
+view(matplot)
+
+#Get variance measures
+summary(df_pca)
+#Get loadings
+df_pca$loadings
+
+## PCA ANALYSIS - works better??
+df_prcomp<-prcomp(df,scale=TRUE)
+df_prcomp$rotation
+
+image(t(abs(df_prcomp$rotation[7:1,])),axes=FALSE,col=heat.colors(50))
+
+#scree plot
+plot(df_prcomp$sdev)
+
+#continuing with the first four PC's
+
+#Find means for variables to see if they differ
+# eigen()
+
+
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

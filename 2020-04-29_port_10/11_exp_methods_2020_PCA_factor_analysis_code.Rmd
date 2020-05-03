@@ -1,0 +1,885 @@
+---
+title: "11 Experimental Methods II Principal component analysis"
+author: "Mikkel Wallentin"
+date: "27 April 2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+
+##----Install Packages if they are not already installed
+```{r}
+#----Install Packages if they are not already installed
+# 
+# wants <- c("GPArotation", "mvtnorm", "polycor", "psych","corpcor","GPArotation","psych","pastecs")
+# has   <- wants %in% rownames(installed.packages())
+# if(any(!has)) install.packages(wants[!has])
+# 
+
+#------And then load these packages, along with the boot package.-----
+
+#library(corpcor)
+#library(GPArotation)
+#library(psych)
+
+pacman::p_load(tidyverse, GPArotatio, mvtnorm, polycor, psych,corpcor,GPArotation,psych,pastecs)
+
+```
+
+#Using the MET test data as simple example
+```{r}
+#Load data
+MET_test<- read.csv("xid-8539623_1.csv")
+MET<-matrix(c(MET_test$melody, MET_test$rhythm), nrow=60,ncol=2)
+matplot(MET,type=c('l'),col=1:2, lwd=3)
+```
+
+#Simplyfy data with two variable to one: use the mean
+##Find row means and plot
+```{r}
+#Find row means
+METmean<-rowMeans(MET)
+MET<-matrix(c(MET_test$melody, MET_test$rhythm,METmean), nrow=60,ncol=3)
+matplot(MET,type=c('l'),col=1:3,lwd=3)
+```
+
+##Plot the data against each other
+```{r}
+matplot(MET[,c(1,3)],MET[,c(2, 3)],type='p',pch=16, col=1:2,xlab = 'melody', ylab = 'rhythm') #pch indicates that I want to plot circles
+```
+
+##Now we can explain the rest of the variance by taking the difference
+```{r}
+MET<-matrix(c(MET_test$melody, MET_test$rhythm,METmean,0.5*MET[,2]-0.5*MET[,1]), nrow=60,ncol=4)
+matplot(MET[,3],MET[,4],type='p',pch=16, col=1,xlab = 'mean', ylab = 'diff') #pch indicates that I want to plot circles
+
+METgrmean<-mean(METmean)
+METgrmean
+```
+
+##Let's see what we get if we perform a principal component analysis
+```{r}
+METpca<-princomp(MET[,1:2])
+matplot(METpca$scores[,1],METpca$scores[,2],type='p',pch=16, col=1,xlab = 'score comp1', ylab = 'score comp2')
+
+##Other PCA functions
+#METpca2<-prcomp(MET[,1:2],center=FALSE)
+#library(psych)
+#METpca3<-principal(MET[,1:2], nfactors=2,rotate='none')
+
+```
+
+##Get information about components
+```{r}
+#Get variance measures
+summary(METpca)
+#Get loadings
+METpca$loadings
+
+#Find means for variables to see if they differ
+colMeans(MET[,1:2])
+sd(MET[,1])
+sd(MET[,2])
+```
+
+##Perform analysis again with scaled variables
+```{r}
+METpcas<-princomp(scale(MET[,1:2]))
+#Get variance measures
+summary(METpcas)
+#Get loadings
+METpcas$loadings
+```
+
+Now, loadings for the first component are the same.
+
+##Use prcomp() analysis, again with scaled variables
+```{r}
+METpcas2<-prcomp(MET[,1:2], scale=TRUE)
+
+#Get loadings
+print(METpcas2) #Now the loadings are called "rotation"
+
+#Get variance explained
+METpcas2$sdev
+
+#scree plot (plotting the variance expl.)
+plot(METpcas2$sdev, type='b')
+
+#Plotting the scores
+matplot(METpcas2$x[,1],METpcas2$x[,2],type='p',pch=16, col=1,xlab = 'score comp1', ylab = 'score comp2')
+
+```
+
+## 2D Covariance matrix
+
+Equations:
+
+$$
+
+cov(x,y)=cov(y,x)=\sum_{i=1}^{n} \frac{(x_i - \bar{x}_i)(y_i-\bar{y}_i)}{n-1}
+
+\\
+\begin{bmatrix}
+  cov(x,x) & cov(x,y) \\
+  cov(y,x) & cov(y,y)
+\end{bmatrix}
+= \
+
+\begin{bmatrix}
+  var(x) & cov(x,y) \\
+  cov(y,x) & var(y)
+\end{bmatrix}
+
+
+$$
+## 3D covariance matrix
+
+$$
+\begin{bmatrix}
+  var(x) & cov(x,y) & cov(x,z)\\
+  cov(x,y) & var(y) & cov(y,z)\\
+  cov(x,z) & cov(y,z) & var(z)
+\end{bmatrix}
+$$
+## Calculating a zero-mean covariance matrix
+$$
+C = \frac{X^TX}{n-1}
+$$
+## Calculate covariance matrix for MET data
+
+```{r}
+#Calculate covariance matrix for MET data
+
+#De-mean MET data
+METdm<-scale(MET[,1:2], center = TRUE, scale = FALSE)
+#Calculate covariance matrix
+METcov<-(t(METdm)%*%METdm)/(nrow(METdm)-1)
+METcov
+#Check that it fits with cov()
+cov(MET[,1:2])
+
+```
+
+## Getting PCA output from Eigen vectors and Eigenvalues of covariance matrix
+
+```{r}
+# The PCA loadings are the eigenvectors of the covariance matrix
+METeigen<-eigen(METcov)
+# The PCA scores are the original data matrix multiplied with the loadings
+METscores<-METdm%*%METeigen$vectors
+
+#Get the same variables as you get from princomp()
+METpca2<-list()
+METpca2$center<-colMeans(MET[,1:2])
+METpca2$loadings<-METeigen$vectors
+METpca2$scores<-METscores
+METpca2$sdev<-apply(METscores, 2, sd)
+METpca2$scree<-METpca2$sdev/sum(METpca2$sdev)
+```
+
+```{r}
+cov(METeigen$vectors)
+
+METcov
+METeigen$vectors %*% (METeigen$values* diag(2)) %*% t(METeigen$vectors)
+
+```
+
+
+
+##Cronbach alpha
+```{r}
+#A measure of internal consistency
+library(psych)
+METf<-data.frame(MET)
+psych::alpha(METf[,1:2])
+```
+
+#MORE THAN TWO VARIABLES
+
+#LET's USE THE PERSONALITY TEST DATA
+
+##Load data and prepare data
+
+```{r message=FALSE}
+
+# import functions
+pacman::p_load(readxl, reshape, ggplot2, car, lme4, corrgram, psych, e1071, polycor, FactoMineR, caret, MASS)
+
+# import the data set
+data2019 <- read_excel("The CogSci Personality Test 2019 DATA.xlsx", "Form Responses 1")
+
+# rename column headers
+colnames(data2019) <- c("timestamp","student_number", "name","birth_day", "shoesize", "gender", "native_Danish", "handedness", "choose_rand_num", "touch_floor", "touch_hands", "2D4D", "balloon", "balloon_balance", "breathhold", "bad_choices", "tongue_twist", "romberg_open", "romberg_closed", "ling_animal", "ling_direct", "ling_demonstr", "ling_place", "ling_abstract", "ling_pronoun", "ling_math", "ling_activity", "ling_adjective", "ling_kiki", "ocular_dom", "vis_teddy", "vis_pattern1", "vis_duck", "vis_sq_face", "vis_landscape", "vis_animal", "vis_emo", "vis_house", "vis_pattern2", "hours_music_per_week", "sound_level_pref", "aud_sound1", "aud_sound2", "aud_sound3", "aud_instr1", "aud_instr2", "aud_vowels", "taste_cola", "taste_jam")
+
+data2019$name<-c("Tobias", "Esben0827","Gustav97", "Nicoline", "Laerke01", "Daniel", "Kazik" , "Liv" , "Gustav98", "Jesper", "Kevan", "Julia", "Maria" , "Jakob" , "Andrea", "Lasse" , "Andreas","Jonathan", "Thea", "Morten", "Anders", "Esben0730" , "Kristine", "Martine", "Kasper", "Soeren Orm" ,"Nanna","Lina" ,"Nina", "Jishuo Li" , "Sophie" ,"Laerke97", "Magnus", "Gacilda" , "Miriam" ,"Pernille0211" , "Kristian Severin" ,"Alba" ,"Emma-Louise" , "Mia" , "Karoline", "Nikolaj",   
+"Astrid" ,"Sarah" , "Alberte","Marcus" ,"Anna" ,"Anne-Line" , "David","Clement","Pernille0415", "Helle","Klara" , "Elisabet" , "Sigrid", "Cecilie","Manon","sarah","Freyja" ,"Veronika",  "Julie" , "Therese" )
+```
+
+
+##Principal component analysis on data
+```{r}
+#These are variables with continuous data and relatively good KMO
+perstest<-matrix(c(data2019$shoesize, data2019$balloon,data2019$balloon_balance,data2019$breathhold,data2019$tongue_twist,data2019$hours_music_per_week,data2019$sound_level_pref),ncol=7)# ,
+rownames(perstest)<-data2019$name
+colnames(perstest)<-c('shoesize','balloon_inflate','balloon_balance','breathhold','tongue_twist','hours_music','sound_level_pref') #
+
+#Remove data with n.a.
+perstest<-na.omit(perstest)
+
+#Give an impression of the data
+head(perstest,n=5)
+```
+
+##Investigate correlation matrix
+```{r}
+#correlation
+perscor<-cor(perstest,use='complete.obs')
+perscor<-round(perscor,3)
+perscor
+```
+
+###Figure correlogram
+```{r}
+#correlogram
+library(corrgram)
+corrgram(perstest, col.regions =  colorRampPalette(c("dodgerblue4", 'dodgerblue','white', 'gold',"firebrick4")),cor.method='pearson')
+```
+
+##Bartlets test of sphericity
+```{r}
+library(psych)
+#Tests if the correlation matrix is the identity matrix (i.e. all correlations are zero)
+cortest.bartlett(perstest)
+```
+##Check if the determinant of the correlation matrix is low
+```{r}
+#The determinant is a measure of multi-colinearity
+det(cor(perstest))
+```
+
+###Kaiser-Meyer-Olkin (KMO) Test for Sampling Adequacy
+
+```{r}
+# 
+# # KMO Kaiser-Meyer-Olkin Measure of Sampling Adequacy
+# # Function by G. Jay Kerns, Ph.D., Youngstown State University (http://tolstoy.newcastle.edu.au/R/e2/help/07/08/22816.html)
+# 
+kmo = function( data ){
+  library(MASS)
+  X <- cor(as.matrix(data))
+  iX <- ginv(X)
+  S2 <- diag(diag((iX^-1)))
+  AIS <- S2%*%iX%*%S2                      # anti-image covariance matrix
+  IS <- X+AIS-2*S2                         # image covariance matrix
+  Dai <- sqrt(diag(diag(AIS)))
+  IR <- ginv(Dai)%*%IS%*%ginv(Dai)         # image correlation matrix
+  AIR <- ginv(Dai)%*%AIS%*%ginv(Dai)       # anti-image correlation matrix
+  a <- apply((AIR - diag(diag(AIR)))^2, 2, sum)
+  AA <- sum(a)
+  b <- apply((X - diag(nrow(X)))^2, 2, sum)
+  BB <- sum(b)
+  MSA <- b/(b+a)                        # indiv. measures of sampling adequacy
+  AIR <- AIR-diag(nrow(AIR))+diag(MSA)  # Examine the anti-image of the correlation matrix. That is the  negative of the partial correlations, partialling out all other variables.
+  kmo <- BB/(AA+BB)                     # overall KMO statistic
+  # Reporting the conclusion
+   if (kmo >= 0.00 && kmo < 0.50){test <- 'The KMO test yields a degree of common variance unacceptable for FA.'}
+      else if (kmo >= 0.50 && kmo < 0.60){test <- 'The KMO test yields a degree of common variance miserable.'}
+      else if (kmo >= 0.60 && kmo < 0.70){test <- 'The KMO test yields a degree of common variance mediocre.'}
+      else if (kmo >= 0.70 && kmo < 0.80){test <- 'The KMO test yields a degree of common variance middling.' }
+      else if (kmo >= 0.80 && kmo < 0.90){test <- 'The KMO test yields a degree of common variance meritorious.' }
+       else { test <- 'The KMO test yields a degree of common variance marvelous.' }
+
+       ans <- list( overall = kmo,
+                  report = test,
+                  individual = MSA,
+                  AIS = AIS,
+                  AIR = AIR )
+    return(ans)
+}
+
+ 
+# #To use this function:
+kmo(perstest)
+```
+
+##The Principal Component Analysis
+```{r}
+#PCA
+pers_prcomp<-prcomp(perstest,scale=TRUE)
+
+pers_prcomp$rotation
+```
+
+
+###Plotting the results
+
+```{r}
+#Plotting the components
+image(t(abs(pers_prcomp$rotation[7:1,])),axes=FALSE,col=heat.colors(50))
+```
+
+```{r}
+#Scree plot
+plot(pers_prcomp$sdev)
+```
+
+
+##Plot components against each other
+```{r}
+#Plot components with names
+plot(pers_prcomp$x[,1],pers_prcomp$x[,2])
+text(pers_prcomp$x[,1],pers_prcomp$x[,2], rownames(perstest), cex= 0.7, pos=3)
+```
+
+
+```{r}
+#Another PCA function for testing
+library(psych)
+pers_prcomp2<-principal(perstest, nfactors = 4, residuals = FALSE,rotate="oblimin",n.obs=NA, covar=FALSE,
+ scores=TRUE,missing=FALSE)
+
+image(t(pers_prcomp2$loadings[7:1,]),col=gray(100:200/200), axes=FALSE)
+pers_prcomp2$loadings
+
+plot(pers_prcomp2$scores[,1],pers_prcomp2$scores[,2])
+text(pers_prcomp2$scores[,1],pers_prcomp2$scores[,2], rownames(perstest), cex= 0.7, pos=3)
+```
+
+```{r}
+
+library(psych)
+#Do factor analysis
+pers_fa_norot<-factanal(perstest,2,rotation="none")
+pers_pca_norot<-principal(scale(perstest),nfactors=4,rotate='none')
+pers_pca_rot<-principal(scale(perstest),nfactors=4,rotate='varimax')
+pers_pca_norot2<-princomp(scale(perstest))
+
+#Plotting the loadings to see if they are orthogonal
+plot(pers_prcomp$rotation[,1],pers_prcomp$rotation[,2],xlim=c(-1,1),ylim=c(-1,1))
+points(pers_fa_norot$loadings[,1],pers_fa_norot$loadings[,2],col='red')
+plot(pers_pca_norot$loadings[,1],pers_pca_norot$loadings[,2],col='blue',xlim=c(-1,1),ylim=c(-1,1))
+points(pers_pca_rot$loadings[,1],pers_pca_rot$loadings[,2],col='red')
+
+```
+
+#PCA analysis on nominal variables
+```{r}
+
+#Change numerical values to nominal
+data2019$romberg_closed_f<-as.factor(data2019$romberg_closed>median(data2019$romberg_closed))
+data2019$choose_rand_num_f<-as.factor(data2019$choose_rand_num>median(data2019$choose_rand_num))
+data2019$balloon_f<-as.factor(data2019$balloon>median(data2019$balloon))
+data2019$balloon_balance_f<-as.factor(data2019$balloon_balance>median(data2019$balloon_balance))
+data2019$breathhold_f<-as.factor(data2019$breathhold>median(data2019$breathhold))
+data2019$tongue_twist_f<-as.factor(data2019$tongue_twist>median(data2019$tongue_twist))
+data2019$hours_music_per_week_f<-as.factor(data2019$hours_music_per_week>median(data2019$hours_music_per_week))
+data2019$sound_level_pref_f<-as.factor(data2019$sound_level_pref>median(data2019$sound_level_pref))
+
+#Exclude additional numerical variables used in the personality test
+is.num <- sapply(data2019, is.numeric)
+data2019_fact <- data2019[, -is.num]
+#exclude variables containing n.a.
+data2019_fact<-na.omit(data2019_fact)
+
+# exclude variables: name, gender. language, student number
+excl_vars <- names(data2019_fact) %in% c("student_number", "name", "gender","Handedness","native_Danish", 'Timestamp') 
+data2019_fact <- data2019_fact[!excl_vars]
+rm(excl_vars)
+```
+
+####Calculate hamming distance
+```{r}
+#Hamming distance
+library(e1071)
+pers_hamming<-hamming.distance(as.matrix(data2019_fact))
+image(scale(pers_hamming),axes=FALSE,col = heat.colors(100))
+```
+
+###Dendrogram
+```{r}
+#Make a dendrogram
+rownames(pers_hamming) <- data2019$name
+#clustering
+tree <- hclust(dist(pers_hamming),method="ward.D") 
+plot(tree)
+```
+
+```{r}
+#Make a dendrogram with another method...
+rownames(pers_hamming) <- data2019$name
+#clustering
+tree <- hclust(dist(pers_hamming),method="complete") 
+plot(tree)
+```
+
+###PCA on Hamming distances
+```{r}
+#PCA
+#Removing duplicate datapoint
+pers_hamming<-hamming.distance(as.matrix(data2019_fact))
+
+persnom_prcomp<-prcomp(pers_hamming,scale=TRUE)
+#Because the hamming distance matrix is symmetrical, 
+#loadings and scores are more or less identical (recall that sign is arbitrary)
+plot(persnom_prcomp$x[,1],persnom_prcomp$rotation[,1])
+plot(persnom_prcomp$x[,2],persnom_prcomp$rotation[,2])
+```
+
+####Scree plot of PCA
+```{r}
+#Scree plot
+plot(persnom_prcomp$sdev)
+```
+
+####Plot two first dimensions against each other with names
+```{r}
+plot(persnom_prcomp$x[,1],persnom_prcomp$x[,2])
+#Add names
+text(persnom_prcomp$x[,1],persnom_prcomp$x[,2], data2019$name, cex= 0.7, pos=3)
+```
+
+###Test if the first component predicts gender
+```{r}
+#Calculate the mean for the 1st comp.
+meanx<-mean(persnom_prcomp$x[,1])
+#Make a classification above or below the mean
+compclass<-persnom_prcomp$x[,1]>meanx
+#Add labels
+compclass<-factor(compclass,labels=c('small','large'))
+#Put into a table
+compclasstb<-table(compclass,data2019$gender[1:62])
+compclasstb
+#Perform Chi-squared statistics
+summary(compclasstb)
+```
+
+###We could also just use a linear model
+```{r}
+mtest<-lm(persnom_prcomp$x[,1]~data2019$gender)
+summary(mtest)
+```
+
+####Plot components with names and gender
+```{r}
+#Plot components with names and color for gender
+plot(persnom_prcomp$x[data2019$gender[1:56]=='male',1],persnom_prcomp$x[data2019$gender[1:56]=='male',4],col='blue',xlab="1st comp",ylab="2nd comp", xlim=c(-5,6),ylim=c(-5,5))
+points(persnom_prcomp$x[data2019$gender[1:56]=='female',1],persnom_prcomp$x[data2019$gender[1:56]=='female',4],col='red')
+text(persnom_prcomp$x[data2019$gender[1:56]=='male',1],persnom_prcomp$x[data2019$gender[1:56]=='male',4], data2019$name[data2019$gender[1:56]=='male'], cex= 0.7, pos=3,col='blue')
+text(persnom_prcomp$x[data2019$gender[1:56]=='female',1],persnom_prcomp$x[data2019$gender[1:56]=='female',4], data2019$name[data2019$gender[1:56]=='female'], cex= 0.7, pos=3,col='red')
+abline(v=meanx)# vertical line in mean of first comp
+```
+
+
+#Lets do an EMPATHY experiment
+```{r}
+#Load and prepare data
+empathy <- read.csv("emp_all_all.csv")
+names(empathy)[18] <- 'gender'
+#New variable without gender
+empathy2<-empathy[,2:17]
+names(empathy2) <- NULL
+#Change to numeric
+#empathy2[] <- lapply(empathy2, as.numeric)
+```
+
+##PCA
+```{r}
+empPCA<-prcomp(scale(empathy2))
+
+#Outputting the loadings
+print(empPCA$rotation[,1:2])
+
+#plotting the loadings
+matplot(,empPCA$rotation,type=c('l'),col=1:16, lwd=2,xlab = 'components', ylab = 'loadings')
+```
+
+##Scree plot
+```{r}
+#Scree plot
+plot(empPCA$sdev,type='b',pch=16,xlab = 'components', ylab = 'variance explained')
+```
+
+##Plot cop1 and comp2 with gender info
+```{r}
+#plotting the first two components with gender info
+f1<-as.numeric(empPCA$x[,1])
+f2<-as.numeric(empPCA$x[,2])
+gender<-empathy$gender
+scores<-data.frame(f1,f2,gender)
+
+library(ggplot2)
+p1 <- ggplot(scores,aes(f1,f2,col=gender,shape=gender) )
+p1 + geom_point(size=4)
+```
+
+##Linear discriminant analysis
+```{r}
+#Predicting the Groups from the continuous varibles
+library(MASS)
+empLDA<-lda(as.factor(gender) ~ scale(f1) + scale(f2), data = scores, na.action="na.omit")
+empLDAp<-predict(empLDA)
+summary(empLDAp)
+```
+
+#plot gender with new discrimination variates
+```{r}
+#Make new df with the LDs
+dataset = data.frame(gender, lda = empLDAp$x,genderLD=empLDAp$class)
+#Plot
+library(scales)
+p1 <- ggplot(dataset) 
+p1 + geom_point(aes(gender, LD1, colour = genderLD, shape = gender), size = 2.5) + 
+  labs(x = "gender",y = "LD1")
+```
+
+###Tabulate predicted group against actual group
+
+```{r}
+#confusion table
+table(empLDAp$class,scores$gender)
+```
+#Grouped histogram
+```{r}
+#First LD
+library(MASS)
+ldahist(data = dataset$LD1, g=gender)
+```
+
+### error rate
+```{r}
+mean1<-mean(empLDAp$class != scores$gender)
+mean1
+```
+
+##Factor analysis of emp data
+```{r}
+library(psych)
+#Use a factor analysis fa.poly because data is ordinal
+faEmp <- fa.poly(empathy2, nfactors=2,rotate="oblimin")
+faEmp$fa$loadings
+```
+
+###Rotaded vs UnRotaded loadings
+```{r}
+faEmpNone <- fa.poly(empathy2, nfactors=2,rotate="none")
+plot(faEmp$fa$loadings[,1],faEmp$fa$loadings[,2],xlim=c(-1,1),ylim=c(-1,1))
+points(faEmpNone$fa$loadings[,1],faEmpNone$fa$loadings[,2],col='red')
+```
+
+##Plot gender distribution
+```{r}
+#plot gender distribution
+f1<-as.numeric(faEmp$scores$scores[,1])
+f2<-as.numeric(faEmp$scores$scores[,2])
+scores<-data.frame(f1,f2,gender)
+library(ggplot2)
+p1 <- ggplot(scores,aes(f1,f2,col=gender,shape = gender) )
+p1 + geom_point(size=4)
+```
+
+##Factor analysis of emp data with oblique rotation
+```{r}
+library(psych)
+#Use a factor analysis fa.poly because data is ordinal
+faEmp2 <- fa.poly(empathy2, nfactors=3, rotate="promax")
+faEmp2$fa$loadings
+
+#plot gender distribution
+f1<-as.numeric(faEmp2$scores$scores[,1])
+f2<-as.numeric(faEmp2$scores$scores[,2])
+f3<-as.numeric(faEmp2$scores$scores[,3])
+scores2<-data.frame(f1,f2,f3,gender)
+library(ggplot2)
+p1 <- ggplot(scores2,aes(f1,f2,col=gender) )
+p1 + geom_point(size=4)
+```
+
+
+ 
+##********************* Fields RAQ Example (chapter 17) ********************
+```{r}
+
+
+# #load data
+# raqData<-read.delim("raq.dat", header = TRUE)
+# 
+# raqDatapca<-princomp(scale(raqData))
+# summary(raqDatapca)
+# raqDatapca$loadings
+# 
+# #create a correlation matrix
+# raqMatrix<-cor(raqData)
+# round(raqMatrix, 2)
+# #break down the matrix to make it easier to put in the book
+# round(raqMatrix[,1:8], 2)
+# round(raqMatrix[,9:16], 2)
+# round(raqMatrix[,17:23], 2)
+# 
+# #Bartlett's test
+# 
+# cortest.bartlett(raqData)
+# cortest.bartlett(raqMatrix, n = 2571)
+ 
+ 
+# #Determinent (execute one of these):
+# det(raqMatrix)
+# det(cor(raqData))
+# 
+# #PCA
+# 
+# #pcModel<-principal(dataframe/R-matrix, nfactors = number of factors, rotate = "method of rotation", scores = TRUE)
+# 
+# #On raw data
+# 
+# pc1 <-  principal(raqData, nfactors = 23, rotate = "none")
+# pc1 <-  principal(raqData, nfactors = length(raqData), rotate = "none")
+# plot(pc1$values, type = "b") 
+# 
+# pc2 <-  principal(raqData, nfactors = 4, rotate = "none")
+# 
+# 
+# #Explore residuals
+# factor.model(pc2$loadings)
+# reproduced<-round(factor.model(pc2$loadings), 3) #format for book
+# reproduced[,1:9]  #format for book
+# 
+# factor.residuals(raqMatrix, pc2$loadings) 
+# resids<-round(factor.residuals(raqMatrix, pc2$loadings), 3) #format for book
+# resids[,1:9] #format for book
+# 
+# pc2$fit.off
+# 
+# residuals<-factor.residuals(raqMatrix, pc2$loadings)
+# residuals<-as.matrix(residuals[upper.tri(residuals)])
+# large.resid<-abs(residuals) > 0.05
+# sum(large.resid)
+# sum(large.resid)/nrow(residuals)
+# sqrt(mean(residuals^2))
+# hist(residuals)
+# 
+# 
+# residual.stats<-function(matrix){
+# 	residuals<-as.matrix(matrix[upper.tri(matrix)])
+# 	large.resid<-abs(residuals) > 0.05
+# 	numberLargeResids<-sum(large.resid)
+# 	propLargeResid<-numberLargeResids/nrow(residuals)
+# 	rmsr<-sqrt(mean(residuals^2))
+# 	
+# 	cat("Root means squared residual = ", rmsr, "\n")
+# 	cat("Number of absolute residuals > 0.05 = ", numberLargeResids, "\n")
+# 	cat("Proportion of absolute residuals > 0.05 = ", propLargeResid, "\n")
+# 	hist(residuals)
+# }
+# 
+# resids <- factor.residuals(raqMatrix, pc2$loadings )
+# residual.stats(resids)
+# residual.stats(factor.residuals(raqMatrix, pc2$loadings))
+# 
+# 
+# #Factor rotation
+# 
+# pc3 <-  principal(raqData, nfactors = 4, rotate = "varimax")
+# print.psych(pc3, cut = 0.3, sort = TRUE)
+# 
+# pc4 <- principal(raqData, nfactors = 4, rotate = "oblimin")
+# print.psych(pc4, cut = 0.3, sort = TRUE)
+# pc4$loadings%*%pc4$Phi
+# 
+# 
+# factor.structure <- function(fa, cut = 0.2, decimals = 2){
+# 	structure.matrix <- fa.sort(fa$loadings %*% fa$Phi)
+# 	structure.matrix <- data.frame(ifelse(abs(structure.matrix) < cut, "", round(structure.matrix, decimals)))
+# 	return(structure.matrix)
+# 	}
+# 	
+# factor.structure(pc4, cut = 0.3)
+# 
+# #Factor scores
+# 
+# pc5 <- principal(raqData, nfactors = 4, rotate = "oblimin", scores = TRUE)
+# pc5$scores
+# head(pc5$scores, 10)
+# raqData <- cbind(raqData, pc5$scores)
+# 
+# #self test
+# 
+# cor(pc5$scores)
+# round(cor(pc5$scores), 2)
+# 
+# #self test
+# round(cor(pc5$scores, raqData$Q01),2)
+# round(cor(pc5$scores, raqData$Q06),2)
+# round(cor(pc5$scores, raqData$Q18),2)
+
+# #On an R matrix
+# 
+# pc1 <- principal(raqMatrix, nfactors = 23, rotate = "none")
+# pc1 <- principal(raqMatrix, nfactors = length(raqMatrix[,1], rotate = "none")
+# pc2 <- principal(raqMatrix, nfactors = 4, rotate = "none")
+# pc3 <- principal(raqMatrix, nfactors = 4, rotate = "varimax")
+# pc4 <- principal(raqMatrix, nfactors = 4, residuals = TRUE, rotate = "oblimin")
+# pc5 <- principal(raqMatrix, nfactors = 4, rotate = "oblimin", scores = TRUE)
+# 
+# 
+# #Reliability analysis
+# 
+# computerFear<-raqData[,c(6, 7, 10, 13, 14, 15, 18)]
+# statisticsFear <- raqData[, c(1, 3, 4, 5, 12, 16, 20, 21)]
+# mathFear <- raqData[, c(8, 11, 17)]
+# peerEvaluation <- raqData[, c(2, 9, 19, 22, 23)]
+# 
+# 
+# alpha(computerFear)
+# alpha(statisticsFear, keys = c(1, -1, 1, 1, 1, 1, 1, 1))
+# alpha(mathFear)
+# alpha(peerEvaluation)
+# alpha(statisticsFear) #for illustrative pruposes
+# 
+# 
+# #------Labcoat Leni------------------------------
+# 
+# 
+# #load data
+# internetData<-read.delim("Nichols & Nicki (2004).dat", header = TRUE)
+# 
+# #create a correlation matrix
+# internetMatrix<-cor(internetData)
+# round(internetMatrix, 2)
+# 
+# #break down the matrix to make it easier to put in the book
+# round(internetMatrix[,1:12], 2)
+# round(internetMatrix[,13:24], 2)
+# round(internetMatrix[,25:36], 2)
+# 
+# #Look at the mean correlation:
+# install.packages("pastecs")
+# library(pastecs)
+# 
+# round(stat.desc(internetMatrix),2)
+# 
+# #break down the descriptives to make it easier to put in the book
+# round(stat.desc(internetMatrix[,1:12]), 2)
+# round(stat.desc(internetMatrix[,13:24]), 2)
+# round(stat.desc(internetMatrix[,25:36]), 2)
+# 
+# 
+# #Calculate the mean and variance of the internetData to 2 decimal places:
+# internetDescriptives<-stat.desc(internetData)
+# round(internetDescriptives,2)
+# 
+# #break down the descriptives to make it easier to put in the book
+# round(internetDescriptives[,1:12], 2)
+# round(internetDescriptives[,13:24], 2)
+# round(internetDescriptives[,25:36], 2)
+# 
+# #Removing the variables from the dataframe:
+# install.packages("gdata")
+# library(gdata)
+# 
+# internetData.2<-remove.vars(internetData, c("ias13", "ias22", "ias32", "ias23", "ias34"))
+# 
+# #Bartlett's test
+# cortest.bartlett(internetData.2)
+# 
+# #KMO test
+# #To use the function (make sure you have executed the function from the book chapter first):
+# kmo(internetData.2)
+# 
+# #Determinent:
+# det(cor(internetData.2))
+# 
+# #PCA
+# 
+# #pcModel<-principal(dataframe/R-matrix, nfactors = number of factors, rotate = "method of rotation", scores = TRUE)
+# 
+# #On raw data
+# pc1 <-  principal(internetData.2, nfactors = 31, rotate = "none")
+# pc1 <-  principal(internetData.2, nfactors = length(internetData.2), rotate = "none")
+# plot(pc1$values, type = "b") 
+# 
+# pc2 <-  principal(internetData.2, nfactors = 5, rotate = "none")
+# 
+# print.psych(pc2, cut = 0.3, sort = TRUE)
+# 
+# #----------Smart Alex Task 1-----------------------
+# #load data
+# tossData<-read.delim("Tosse-r.dat", header = TRUE)
+# 
+# #create new dataset without missing data 
+# tossData.2<-na.omit(tossData)
+# 
+# #create a correlation matrix
+# tossMatrix<-cor(tossData.2)
+# 
+# 
+# #Bartlett's test
+# cortest.bartlett(tossData.2)
+# 
+# 
+# #KMO test
+# #To use the function (make sure you have executed the function from the book chapter first):
+# kmo(tossData.2)
+# 
+# #Determinent:
+# det(cor(tossData.2))
+# 
+# 
+# #PCA
+# 
+# #pcModel<-principal(dataframe/R-matrix, nfactors = number of factors, rotate = "method of rotation", scores = TRUE)
+# 
+# #On raw data
+# pc1 <-  principal(tossData.2, nfactors = 28, rotate = "none")
+# 
+# #Extract 5 factors:
+# pc2 <-  principal(tossData.2, nfactors = 5, rotate = "none")
+# 
+# #Scree plot:
+# plot(pc1$values, type = "b") 
+# 
+# #Oblique rotation on 5 factors:
+# pc3 <- principal(tossData.2, nfactors = 5, rotate = "oblimin")
+# print.psych(pc3, cut = 0.3, sort = TRUE)
+# 
+# #Oblique rotation on 3 factors:
+# pc4 <- principal(tossData.2, nfactors = 3, rotate = "oblimin")
+# print.psych(pc4, cut = 0.3, sort = TRUE)
+# 
+# #----------Smart Alex Task 2-----------------------
+# #load data
+# williamsData<-read.delim("Williams.dat", header = TRUE)
+# 
+# #create new dataset without missing data 
+# williamsData.2<-na.omit(williamsData)
+# 
+# #create a correlation matrix
+# williamsMatrix<-cor(williamsData.2)
+# 
+# #Bartlett's test
+# cortest.bartlett(williamsData.2)
+# 
+# #KMO test
+# #To use the function (make sure you have executed the function from the book chapter first):
+# kmo(williamsData.2)
+# 
+# #calculate the Determinent:
+# det(cor(williamsData.2))
+# 
+# #PCA
+# 
+# #pcModel
+# #On raw data, extract 5 factors, varimax rotation:
+# pc1 <-  principal(williamsData.2, nfactors = 5, rotate = "varimax")
+# 
+# #Scree plot:
+# plot(pc1$values, type = "b") 
+# 
+# #Pattern Matrix in a nice format:
+# print.psych(pc1, cut = 0.3, sort = TRUE)
+
+```
+
